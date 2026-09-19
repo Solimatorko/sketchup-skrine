@@ -12,3 +12,22 @@ require_relative 'ui/dialog'
 module Skrine
   # SketchUp-side modules are required here (see sketchup/ and ui/).
 end
+
+module Skrine
+  unless file_loaded?(__FILE__)
+    menu = UI.menu('Extensions').add_submenu('Skrine')
+    menu.add_item('Nová skriňa') { SU::Commands.new_object(:wardrobe) }
+    menu.add_item('Upraviť označenú skriňu') { SU::Commands.edit_selected }
+    menu.add_item('Nárezový plán (označené / všetky)') { SU::CutlistCommand.run(Sketchup.active_model) }
+
+    UI.add_context_menu_handler do |context_menu|
+      group = SU::Selection.current_object(Sketchup.active_model)
+      if group
+        context_menu.add_separator
+        context_menu.add_item('Upraviť skriňu (Skrine)') { SU::Commands.open_editor(group) }
+        context_menu.add_item('Nárezový plán skrine') { SU::CutlistCommand.run(Sketchup.active_model, [group]) }
+      end
+    end
+    file_loaded(__FILE__)
+  end
+end
