@@ -2,6 +2,8 @@ require 'json'
 require_relative '../sketchup/builder'
 require_relative '../sketchup/storage'
 require_relative '../sketchup/presets'
+require_relative '../sketchup/cutlist_command'
+require_relative '../sketchup/commands'
 
 module Skrine
   module SU
@@ -80,11 +82,10 @@ module Skrine
       end
 
       def run_cutlist
-        if defined?(Skrine::SU::CutlistCommand)
-          CutlistCommand.run(Sketchup.active_model, [@group].compact)
-        else
-          UI.messagebox('Nárezový plán ešte nie je k dispozícii (Task 13).')
-        end
+        groups = [@group].reject { |g| g.nil? || g.deleted? }
+        return UI.messagebox('Skriňa v modeli už neexistuje.') if groups.empty?
+
+        CutlistCommand.run(Sketchup.active_model, groups)
       end
     end
   end

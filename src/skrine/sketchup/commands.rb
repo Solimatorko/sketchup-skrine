@@ -24,12 +24,10 @@ module Skrine
         open_editor(group)
       end
 
+      # Skrine::SU::Dialog is required by loader.rb after this file, so it is
+      # only resolved when this method actually runs (not when this file loads).
       def open_editor(group)
-        if defined?(Skrine::SU::Dialog)
-          Dialog.instance.open_for(group)
-        else
-          UI.messagebox('Editor ešte nie je k dispozícii (Task 12).')
-        end
+        Dialog.instance.open_for(group)
       end
     end
   end

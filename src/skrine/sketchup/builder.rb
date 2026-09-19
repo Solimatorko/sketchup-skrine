@@ -10,6 +10,7 @@ module Skrine
       def create(model, type_key, params)
         started = false
         type = Core::Registry.fetch(type_key)
+        params = type.schema.merge_defaults(params)
         layout = type.model_class.new(params).layout
         return result(layout) unless layout.valid?
 
@@ -35,12 +36,16 @@ module Skrine
         raise "Skupina neobsahuje platné dáta objektu Skrine." if data.nil?
 
         type = Core::Registry.fetch(data[:type])
+        params = type.schema.merge_defaults(params)
         layout = type.model_class.new(params).layout
         return result(layout) unless layout.valid?
 
         model = group.model
         model.start_operation("Skrine: úprava #{type.label}", true)
         started = true
+        # A group copy-pasted to make a variant shares its definition with the
+        # original; without this, rebuilding one rebuilds every copy.
+        group.make_unique if group.definition.instances.size > 1
         group.entities.clear!
         build_into(group, layout, params)
         Storage.write(group, type.key, params, hardware: layout.hardware)
@@ -71,6 +76,10 @@ module Skrine
       end
 
       def add_box(entities, box, name, material)
+        unless box.dx > 0 && box.dy > 0 && box.dz > 0
+          raise "Dielec '#{name}' má nulový alebo záporný rozmer (#{box.dx.round(1)}×#{box.dy.round(1)}×#{box.dz.round(1)} mm)"
+        end
+
         g = entities.add_group
         g.name = name
         pts = [

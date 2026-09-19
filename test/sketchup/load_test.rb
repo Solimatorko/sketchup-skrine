@@ -55,6 +55,22 @@ class SketchupLoadTest < Minitest::Test
     def commit_operation = calls << :commit_operation
   end
 
+  # Fails loudly if touched: add_box must raise before reaching the SketchUp API
+  # for a degenerate box (dx/dy/dz <= 0), not fall through to a cryptic error.
+  FakeEntitiesNeverCalled = Class.new do
+    def method_missing(*) = raise('entities should not be touched for a degenerate box')
+    def respond_to_missing?(*) = true
+  end
+
+  def test_add_box_raises_a_readable_error_for_a_degenerate_box
+    box = Skrine::Core::Box.new(x: 0.0, y: 0.0, z: 0.0, dx: 100.0, dy: 0.0, dz: 50.0)
+    err = assert_raises(RuntimeError) do
+      Skrine::SU::Builder.add_box(FakeEntitiesNeverCalled.new, box, 'Polica', nil)
+    end
+    assert_includes err.message, "'Polica'"
+    assert_includes err.message, '100.0'
+  end
+
   def test_create_with_unknown_type_does_not_abort_unstarted_operation
     fake_model = FakeModel.new
     res = Skrine::SU::Builder.create(fake_model, :no_such_type, {})
@@ -89,6 +105,36 @@ class SketchupLoadTest < Minitest::Test
     end
 
     def entities = part_entities
+  end
+
+  # A dictionary without #to_h (as on some SketchUp/Ruby combinations), forcing
+  # CutlistCommand.collect onto the dict.keys.to_h { ... } fallback. A plain
+  # class (not a Struct, which would supply its own #to_h) so respond_to?(:to_h)
+  # is really false, like SketchUp's own AttributeDictionary on older builds.
+  class FakePartDictNoToH
+    def initialize(attrs) = @attrs = attrs
+    def keys = @attrs.keys
+    def [](key) = @attrs[key]
+  end
+
+  FakePartEntityNoToH = Struct.new(:part) do
+    def attribute_dictionary(name)
+      FakePartDictNoToH.new(part.to_attrs) if name == Skrine::SU::Storage::PART_DICT
+    end
+  end
+
+  def test_cutlist_command_collect_falls_back_when_attribute_dictionary_has_no_to_h
+    sample_part = Skrine::Core::Part.new(name: 'Bok P', category: :side, material: :corpus,
+                                          length: 2300, width: 582, thickness: 18,
+                                          edges: { long_a: true }, grain: :length)
+    group = FakeWardrobeGroup.new([FakePartEntityNoToH.new(sample_part)])
+
+    cutlist = Skrine::SU::CutlistCommand.collect([group])
+
+    row = cutlist.rows.find { |r| r.name == 'Bok P' }
+    refute_nil row
+    assert_equal 2300, row.length
+    assert_equal 582, row.width
   end
 
   def test_cutlist_command_collect_reads_parts_and_hardware_from_fake_groups

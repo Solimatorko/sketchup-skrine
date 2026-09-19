@@ -25,14 +25,16 @@ module Skrine
           data = Storage.read(g)
           type = Core::Registry.fetch(data[:type])
           params = type.schema.merge_defaults(data[:params])
-          params[:materials].each { |k, v| materials[k] ||= v }
+          (params[:materials] || {}).each { |k, v| materials[k] ||= v }
           part_groups(g).each do |e|
             dict = e.attribute_dictionary(Storage::PART_DICT)
             next unless dict
 
             # AttributeDictionary#to_h availability differs across SketchUp/Ruby
-            # versions; each_pair.to_h is the portable fallback.
-            attrs = dict.respond_to?(:to_h) ? dict.to_h : dict.each_pair.to_h
+            # versions; #keys + #[] is the portable fallback (SketchUp's
+            # C-implemented #each_pair without a block is not guaranteed to
+            # return an Enumerator).
+            attrs = dict.respond_to?(:to_h) ? dict.to_h : dict.keys.to_h { |k| [k, dict[k]] }
             parts << Core::Part.from_attrs(attrs)
           end
           hardware.concat(Storage.hardware(g))
