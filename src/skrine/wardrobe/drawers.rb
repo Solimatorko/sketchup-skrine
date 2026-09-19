@@ -19,6 +19,10 @@ module Skrine
         return unless heights
 
         z_top = rect.z2
+        # Upper bound for the box of the drawer we're about to build: the cell
+        # top for the topmost drawer, then the box-start (mount height) of the
+        # drawer above for every drawer below it.
+        prev_box_z0 = cell.z0 + cell.h
         heights.each_with_index do |h, k|
           fbox = Core::Box.new(x: rect.x, y: rect.y, z: z_top - h, dx: rect.dx, dy: rect.dy, dz: h)
           name = "#{inner ? 'Vnút. zásuvka' : 'Zásuvka'} S#{col.index}/P#{cell.index}-#{k + 1}"
@@ -27,7 +31,7 @@ module Skrine
             record_drilled_handle(col.handle, "Čelo #{name}")
           end
           add_drawer_front(fbox, name, col)
-          build_drawer_box(col, cell, fbox, name)
+          prev_box_z0 = build_drawer_box(col, cell, fbox, name, prev_box_z0)
           z_top -= h + gv
         end
       end
@@ -72,22 +76,29 @@ module Skrine
         lengths.select { |l| l <= avail }.max
       end
 
-      def build_drawer_box(col, cell, fbox, name)
+      # +top_limit+ is the highest z the box may reach: the cell top for the
+      # topmost drawer, otherwise the box-start of the drawer above (its own
+      # front notch is not the limit -- the box sits behind the front and is
+      # only blocked by whatever hardware is mounted above it). Returns the
+      # z0 this box starts at, which becomes the caller's next +top_limit+.
+      def build_drawer_box(col, cell, fbox, name, top_limit)
         sys = drawer_system
         y0 = fbox.y2 + 2
-        nl = nominal_length(sys, y0)
-        return layout.error("#{name}: žiadna nominálna dĺžka výsuvu (#{sys[:lengths]}) sa nezmestí do hĺbky #{f[:inner_d].round} mm") unless nl
-
         z0 = [fbox.z, cell.z0].max + 12
-        # Vertical room actually available in the cavity for this drawer's box,
-        # as opposed to the (possibly taller, due to overlay overlap) front.
-        share_h = [fbox.z2, cell.z0 + cell.h].min - z0
+        nl = nominal_length(sys, y0)
+        unless nl
+          layout.error("#{name}: žiadna nominálna dĺžka výsuvu (#{sys[:lengths]}) sa nezmestí do hĺbky #{f[:inner_d].round} mm")
+          return z0
+        end
+
+        share_h = top_limit - z0
         case sys[:box]
         when :wood then build_wood_box(col, fbox, name, sys, nl, y0, z0, share_h)
         when :metal then build_metal_box(col, fbox, name, sys, nl, y0, z0, share_h)
         else
           layout.hardware_item(kind: :slide, name: "Výsuv #{sys[:label]} NL#{nl.round}", qty: 1, unit: :pair, meta: { drawer: name })
         end
+        z0
       end
 
       def build_wood_box(col, fbox, name, sys, nl, y0, z0, share_h)

@@ -38,7 +38,7 @@ class DrawersTest < Minitest::Test
     l = wardrobe(drawer_system: :wood_box)
     side = l.find('Box bok Ľ Zásuvka S1/P2-1')
     assert_equal 500, side.length
-    assert_equal 139.5, side.width             # cavity share 164.5 (fbox.dz 176.5 - 12 mount offset) - 25 clearance
+    assert_equal 151.5, side.width             # 176.5 - 25; front-limited (share is bounded by the drawer above, not its own front)
     assert_equal 16, side.thickness
     back = l.find('Box zadný Zásuvka S1/P2-1')
     assert_equal 915, back.length              # 973 - 26 - 32
