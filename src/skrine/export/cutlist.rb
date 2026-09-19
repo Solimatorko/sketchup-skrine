@@ -59,22 +59,23 @@ module Skrine
 
       def to_csv
         out = +"﻿"
-        out << %w[Materiál Hrúbka Názov Ks Dĺžka Šírka Hrany Dekor].join(CSV_SEP) << "\n"
+        out << csv_row(%w[Materiál Hrúbka Názov Ks Dĺžka Šírka Hrany Dekor])
         rows.each do |r|
-          out << [r.material_label, fmt(r.thickness), r.name, r.qty, fmt(r.length), fmt(r.width), r.edge_code,
-                  r.grain == 'none' ? 'nie' : 'áno'].join(CSV_SEP) << "\n"
+          out << csv_row([r.material_label, fmt(r.thickness), r.name, r.qty, fmt(r.length), fmt(r.width), r.edge_code,
+                           r.grain == 'none' ? 'nie' : 'áno'])
         end
-        out << "\n" << %w[Kovanie Názov Množstvo Jednotka].join(CSV_SEP) << "\n"
-        hardware_rows.each { |h| out << [h.kind, h.name, fmt(h.qty), unit_label(h.unit)].join(CSV_SEP) << "\n" }
+        out << "\n" << csv_row(%w[Druh Názov Množstvo Jednotka])
+        hardware_rows.each { |h| out << csv_row([h.kind, h.name, fmt(h.qty), unit_label(h.unit)]) }
         out
       end
 
       # Format understood by CutList Optimizer (cutlistoptimizer.com) CSV import.
       def to_optimizer_csv
-        out = +"Length;Width;Qty;Label;Enabled;Grain\n"
+        out = +''
+        out << csv_row(%w[Length Width Qty Label Enabled Grain])
         rows.each do |r|
-          out << [fmt(r.length), fmt(r.width), r.qty, "#{r.name} [#{r.material_label} #{fmt(r.thickness)}]", 'true',
-                  r.grain == 'none' ? 'false' : 'true'].join(CSV_SEP) << "\n"
+          out << csv_row([fmt(r.length), fmt(r.width), r.qty, "#{r.name} [#{r.material_label} #{fmt(r.thickness)}]",
+                           'true', r.grain == 'none' ? 'false' : 'true'])
         end
         out
       end
@@ -119,6 +120,17 @@ module Skrine
 
       def esc(s)
         CGI.escapeHTML(s.to_s)
+      end
+
+      def csv_row(fields)
+        fields.map { |f| csv_field(f) }.join(CSV_SEP) << "\n"
+      end
+
+      # RFC 4180 style: quote a field only when it contains the separator, a
+      # double quote or a line break; double up any inner quotes.
+      def csv_field(value)
+        s = value.to_s
+        s.match?(/[;"\n\r]/) ? "\"#{s.gsub('"', '""')}\"" : s
       end
     end
   end

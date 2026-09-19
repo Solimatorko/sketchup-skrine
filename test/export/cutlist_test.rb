@@ -65,4 +65,24 @@ class CutlistTest < Minitest::Test
     assert_includes html, 'Kovanie'
     assert_includes html, 'Hranovanie'
   end
+
+  def cutlist_with_corpus_name(name)
+    materials = wardrobe_params[:materials].merge(corpus: { name: name, color: '#fff' })
+    cutlist(materials: materials)
+  end
+
+  def test_csv_and_optimizer_csv_quote_fields_with_separators_or_quotes
+    c = cutlist_with_corpus_name('DTD; "Egger" H1180')
+
+    csv = c.to_csv
+    assert csv.lines.any? { |l| l.start_with?('"DTD; ""Egger"" H1180";18;') }
+
+    opt = c.to_optimizer_csv
+    assert opt.lines.any? { |l| l.include?('"Bok Ľ (+1) [DTD; ""Egger"" H1180 18]"') }
+  end
+
+  def test_html_escapes_material_name
+    html = cutlist_with_corpus_name('A<B & C').to_html
+    assert_includes html, 'A&lt;B &amp; C'
+  end
 end
