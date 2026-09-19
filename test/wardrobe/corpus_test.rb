@@ -108,6 +108,30 @@ class CorpusTest < Minitest::Test
     assert_equal :corpus, l.find('Zadná stena').material
   end
 
+  def test_plinth_with_overlay_top_corners
+    top = wardrobe_params[:top].merge(corner_left: :overlay, corner_right: :overlay)
+    l = wardrobe(base_type: :plinth, top: top)
+    assert l.valid?, l.errors.join('; ')
+    left = l.find('Bok Ľ')
+    assert_in_delta 0, left.box.z
+    assert_in_delta 2382, left.box.dz
+    strop = l.find('Strop')
+    assert_in_delta 0, strop.box.x
+    assert_in_delta 2000, strop.box.dx
+  end
+
+  def test_legs_with_overlay_bottom_corners
+    bottom = wardrobe_params[:bottom].merge(corner_left: :overlay, corner_right: :overlay)
+    l = wardrobe(base_type: :legs, bottom: bottom)
+    assert l.valid?, l.errors.join('; ')
+    left = l.find('Bok Ľ')
+    assert_in_delta 118, left.box.z
+    assert_in_delta 2282, left.box.dz
+    dno = l.find('Dno')
+    assert_in_delta 0, dno.box.x
+    assert_in_delta 2000, dno.box.dx
+  end
+
   def test_depth_excluding_fronts
     l = wardrobe(depth_includes_fronts: false)
     assert_box l.find('Bok Ľ'), x: 0, y: 18, z: 100, dx: 18, dy: 600, dz: 2300
