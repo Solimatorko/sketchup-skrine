@@ -8,7 +8,7 @@ module Skrine
       CSV_SEP = ';'
 
       Row = Struct.new(:material, :material_label, :thickness, :name, :qty, :length, :width, :edge_code, :edges,
-                       :grain, :category, keyword_init: true)
+                       :grain, :category, :note, keyword_init: true)
       HwRow = Struct.new(:kind, :name, :qty, :unit, keyword_init: true)
 
       def initialize(parts, hardware, materials: {})
@@ -25,7 +25,7 @@ module Skrine
                     Row.new(material: mat, material_label: label_for(mat), thickness: t,
                             name: names.size == 1 ? names.first : "#{names.first} (+#{names.size - 1})",
                             qty: pts.size, length: l, width: w, edge_code: code, edges: pts.first.edges,
-                            grain: grain, category: pts.first.category)
+                            grain: grain, category: pts.first.category, note: drilling_note(pts.first))
                   end
                   .sort_by { |r| [r.material_label, r.thickness, -(r.length * r.width), r.name] }
       end
@@ -59,10 +59,10 @@ module Skrine
 
       def to_csv
         out = +"﻿"
-        out << csv_row(%w[Materiál Hrúbka Názov Ks Dĺžka Šírka Hrany Dekor])
+        out << csv_row(%w[Materiál Hrúbka Názov Ks Dĺžka Šírka Hrany Dekor Poznámka])
         rows.each do |r|
           out << csv_row([r.material_label, fmt(r.thickness), r.name, r.qty, fmt(r.length), fmt(r.width), r.edge_code,
-                           r.grain == 'none' ? 'nie' : 'áno'])
+                           r.grain == 'none' ? 'nie' : 'áno', r.note])
         end
         out << "\n" << csv_row(%w[Druh Názov Množstvo Jednotka])
         hardware_rows.each { |h| out << csv_row([h.kind, h.name, fmt(h.qty), unit_label(h.unit)]) }
@@ -89,7 +89,8 @@ module Skrine
         by_material.each do |label, list|
           h << "<h2>#{esc(label)}</h2><table><tr><th>Názov</th><th>Ks</th><th>Dĺžka</th><th>Šírka</th><th>Hrany</th><th>Dekor</th></tr>"
           list.each do |r|
-            h << "<tr><td>#{esc(r.name)}</td><td class=n>#{r.qty}</td><td class=n>#{fmt(r.length)}</td><td class=n>#{fmt(r.width)}</td>"
+            note = r.note ? " <small>#{esc(r.note)}</small>" : ''
+            h << "<tr><td>#{esc(r.name)}#{note}</td><td class=n>#{r.qty}</td><td class=n>#{fmt(r.length)}</td><td class=n>#{fmt(r.width)}</td>"
             h << "<td>#{r.edge_code}</td><td>#{r.grain == 'none' ? 'nie' : 'áno'}</td></tr>"
           end
           h << "<tr><th colspan=6>Plocha #{fmt(area_m2[label], 2)} m² · Hranovanie #{fmt(edge_meters[label], 1)} m</th></tr></table>"
@@ -103,6 +104,15 @@ module Skrine
       end
 
       private
+
+      # Line-drilling (system 32) info to surface for a merged row, taken from
+      # its first part; nil when that part has none.
+      def drilling_note(part)
+        d = part.meta[:drilling]
+        return nil unless d
+
+        "rad otvorov #{d[:pitch].to_f.round} mm"
+      end
 
       def label_for(mat)
         name = @materials.dig(mat.to_sym, :name).to_s

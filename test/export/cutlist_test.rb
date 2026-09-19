@@ -53,6 +53,19 @@ class CutlistTest < Minitest::Test
     assert lines.any? { |l| l.include?('Bok Ľ (+1);2;2300;582;1D;') }
   end
 
+  def test_csv_and_html_carry_a_line_drilling_note
+    c = cutlist(line_drilling: true)
+    csv = c.to_csv
+    assert csv.lines.first.include?('Poznámka')
+    csv_line = csv.lines.find { |l| l.start_with?('DTD 18 biela;18;Bok Ľ (+1);') }
+    refute_nil csv_line
+    assert csv_line.strip.end_with?(';rad otvorov 32 mm')
+    html = c.to_html
+    assert_includes html, '<td>Bok Ľ (+1) <small>rad otvorov 32 mm</small></td>'
+    # optimizer CSV header is unaffected
+    assert_equal 'Length;Width;Qty;Label;Enabled;Grain', c.to_optimizer_csv.lines.first.strip
+  end
+
   def test_optimizer_csv_format
     csv = cutlist.to_optimizer_csv
     assert_equal 'Length;Width;Qty;Label;Enabled;Grain', csv.lines.first.strip
