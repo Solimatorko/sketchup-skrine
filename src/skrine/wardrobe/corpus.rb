@@ -136,7 +136,8 @@ module Skrine
           box = Core::Box.new(x: f[:inner_x0], y: f[:corpus_y0] + f[:body_d] - t, z: f[:inner_z0],
                               dx: f[:inner_w], dy: t, dz: f[:inner_h])
         end
-        layout.part(name: 'Zadná stena', category: :back, material: :back, length: box.dz, width: box.dx,
+        material = p[:back_mode] == :inset ? :corpus : :back
+        layout.part(name: 'Zadná stena', category: :back, material: material, length: box.dz, width: box.dx,
                     thickness: t, edges: edges_for(:none), grain: :none, box: box)
       end
     end

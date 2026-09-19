@@ -105,6 +105,7 @@ class CorpusTest < Minitest::Test
     l = wardrobe(back_mode: :inset)
     assert_box l.find('Zadná stena'), x: 18, y: 582, z: 118, dx: 1964, dy: 18, dz: 2264
     assert_in_delta 564, l.info[:inner_d]
+    assert_equal :corpus, l.find('Zadná stena').material
   end
 
   def test_depth_excluding_fronts
