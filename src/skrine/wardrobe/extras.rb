@@ -17,7 +17,7 @@ module Skrine
         count = 0
         layout.parts.each do |part|
           case part.category
-          when :corpus then count += 2 * per_joint(part.width) if %w[Strop Dno].include?(part.name)
+          when :corpus then count += 2 * per_joint(part.width) if part.meta[:panel]
           when :partition then count += 2 * per_joint(part.width)
           when :shelf then count += 2 * per_joint(part.width) unless part.meta[:adjustable]
           end

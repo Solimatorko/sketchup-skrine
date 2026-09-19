@@ -44,7 +44,8 @@ module Skrine
         layout.part(
           name: which == :top ? 'Strop' : 'Dno', category: :corpus, material: :corpus,
           length: x1 - x0, width: dy, thickness: t, edges: edges_for(p[:edge_corpus], :long_a),
-          box: Core::Box.new(x: x0, y: y, z: z, dx: x1 - x0, dy: dy, dz: t)
+          box: Core::Box.new(x: x0, y: y, z: z, dx: x1 - x0, dy: dy, dz: t),
+          meta: { panel: which }
         )
       end
 

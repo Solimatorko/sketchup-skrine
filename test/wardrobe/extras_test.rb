@@ -21,4 +21,12 @@ class ExtrasTest < Minitest::Test
     assert_equal 'Kolík', j.name
     assert_equal 4 * 4 + 4 * 2 + 4 * 4, j.qty     # 582 -> 4, 567 -> 4, 565 -> 4 per joint
   end
+
+  def test_joinery_matches_top_bottom_panels_by_meta_not_name
+    l = wardrobe
+    assert_equal :top, l.find('Strop').meta[:panel]
+    assert_equal :bottom, l.find('Dno').meta[:panel]
+    # sides carry no :panel tag and must not be counted as top/bottom joints
+    assert_nil l.find('Bok Ľ').meta[:panel]
+  end
 end
