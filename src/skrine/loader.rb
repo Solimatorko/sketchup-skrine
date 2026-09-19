@@ -17,6 +17,7 @@ module Skrine
   unless file_loaded?(__FILE__)
     menu = UI.menu('Extensions').add_submenu('Skrine')
     menu.add_item('Nová skriňa') { SU::Commands.new_object(:wardrobe) }
+    menu.add_item('Nová skriňa z presetu…') { SU::Commands.new_from_preset }
     menu.add_item('Upraviť označenú skriňu') { SU::Commands.edit_selected }
     menu.add_item('Nárezový plán (označené / všetky)') { SU::CutlistCommand.run(Sketchup.active_model) }
 

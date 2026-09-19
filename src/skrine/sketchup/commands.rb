@@ -1,5 +1,6 @@
 require_relative 'builder'
 require_relative 'selection'
+require_relative 'presets'
 
 module Skrine
   module SU
@@ -10,6 +11,21 @@ module Skrine
         model = Sketchup.active_model
         type = Core::Registry.fetch(type_key)
         res = Builder.create(model, type.key, type.schema.defaults)
+        if res[:errors].any?
+          UI.messagebox("Skriňa sa nevytvorila:\n#{res[:errors].join("\n")}")
+        else
+          open_editor(res[:group])
+        end
+      end
+
+      # Loads a preset JSON file and creates a wardrobe from it directly
+      # (skips the editor's live defaults, unlike new_object).
+      def new_from_preset
+        params = Presets.load
+        return unless params
+
+        type = Core::Registry.fetch(:wardrobe)
+        res = Builder.create(Sketchup.active_model, type.key, type.schema.merge_defaults(params))
         if res[:errors].any?
           UI.messagebox("Skriňa sa nevytvorila:\n#{res[:errors].join("\n")}")
         else

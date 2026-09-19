@@ -24,6 +24,10 @@ class SketchupLoadTest < Minitest::Test
     assert defined?(Skrine::SU::CutlistCommand)
   end
 
+  def test_commands_expose_new_from_preset
+    assert_respond_to Skrine::SU::Commands, :new_from_preset
+  end
+
   def test_presets_dir_exists_and_has_presets
     dir = Skrine::SU::Presets::DIR
     refute_nil dir
