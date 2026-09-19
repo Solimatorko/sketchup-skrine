@@ -8,6 +8,8 @@ require 'skrine/sketchup/storage'
 require 'skrine/sketchup/builder'
 require 'skrine/sketchup/selection'
 require 'skrine/sketchup/commands'
+require 'skrine/sketchup/presets'
+require 'skrine/ui/dialog'
 
 class SketchupLoadTest < Minitest::Test
   def test_modules_are_defined
@@ -16,6 +18,15 @@ class SketchupLoadTest < Minitest::Test
     assert defined?(Skrine::SU::Builder)
     assert defined?(Skrine::SU::Selection)
     assert defined?(Skrine::SU::Commands)
+    assert defined?(Skrine::SU::Presets)
+    assert defined?(Skrine::SU::Dialog)
+  end
+
+  def test_presets_dir_exists_and_has_presets
+    dir = Skrine::SU::Presets::DIR
+    refute_nil dir
+    assert Dir.exist?(dir)
+    assert_operator Dir[File.join(dir, '*.json')].size, :>, 0
   end
 
   def test_units_mm_conversion

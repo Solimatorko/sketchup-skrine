@@ -1,0 +1,36 @@
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { font: 13px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: #222; background: #f6f6f6; display: flex; flex-direction: column; }
+header { padding: 8px 12px; background: #fff; border-bottom: 1px solid #ddd; }
+header h1 { font-size: 15px; margin: 0 0 6px; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+button { font: inherit; padding: 4px 10px; border: 1px solid #bbb; border-radius: 4px; background: #fafafa; cursor: pointer; }
+button:hover { background: #eee; }
+button.primary { background: #2f6fdb; border-color: #2f6fdb; color: #fff; }
+button.primary:hover { background: #245cb8; }
+nav { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 12px 0; background: #fff; border-bottom: 1px solid #ddd; }
+nav button { border-radius: 4px 4px 0 0; border-bottom: none; background: #eee; }
+nav button.active { background: #fff; font-weight: 600; }
+main { flex: 1; overflow: auto; padding: 10px 12px; }
+.panel { display: none; }
+.panel.active { display: block; }
+.row { display: grid; grid-template-columns: 1fr 120px 28px; align-items: center; gap: 6px; padding: 3px 0; }
+.row span { color: #333; }
+.row em { color: #888; font-style: normal; font-size: 11px; }
+.row input[type=number], .row input[type=text], .row select { width: 100%; font: inherit; padding: 3px 5px; border: 1px solid #bbb; border-radius: 3px; }
+.row input[type=checkbox] { justify-self: start; }
+fieldset { border: 1px solid #ddd; border-radius: 4px; margin: 8px 0; padding: 6px 10px; background: #fff; }
+legend { font-weight: 600; padding: 0 4px; }
+.list { margin: 8px 0; }
+.list-head { font-weight: 600; margin: 6px 0; }
+.item { border: 1px solid #ccc; border-radius: 4px; background: #fff; padding: 6px 10px; margin-bottom: 8px; }
+.item .item { background: #f9f9f9; }
+.item-bar { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
+.item-bar strong { flex: 1; }
+.item-bar button { padding: 1px 7px; }
+button.add { margin: 2px 0 8px; }
+footer { border-top: 1px solid #ddd; background: #fff; padding: 6px 12px; max-height: 32%; overflow: auto; }
+.msg { padding: 4px 8px; border-radius: 3px; margin-bottom: 3px; }
+.msg.error { background: #fde8e8; color: #9b1c1c; }
+.msg.warn { background: #fff4e0; color: #8a5300; }
+#info { font-size: 12px; color: #444; line-height: 1.5; }
