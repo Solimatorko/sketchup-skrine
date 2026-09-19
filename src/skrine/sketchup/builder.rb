@@ -8,11 +8,13 @@ module Skrine
       module_function
 
       def create(model, type_key, params)
+        started = false
         type = Core::Registry.fetch(type_key)
         layout = type.model_class.new(params).layout
         return result(layout) unless layout.valid?
 
         model.start_operation("Skrine: nová #{type.label}", true)
+        started = true
         group = model.active_entities.add_group
         group.name = type.label
         build_into(group, layout, params)
@@ -22,11 +24,13 @@ module Skrine
         model.selection.add(group)
         result(layout).merge(group: group)
       rescue StandardError => e
-        model.abort_operation
+        model.abort_operation if started
         { errors: ["Chyba pri generovaní: #{e.message}"], warnings: [], info: {} }
       end
 
       def rebuild(group, params)
+        started = false
+        model = nil
         data = Storage.read(group)
         raise "Skupina neobsahuje platné dáta objektu Skrine." if data.nil?
 
@@ -36,13 +40,14 @@ module Skrine
 
         model = group.model
         model.start_operation("Skrine: úprava #{type.label}", true)
+        started = true
         group.entities.clear!
         build_into(group, layout, params)
         Storage.write(group, type.key, params, hardware: layout.hardware)
         model.commit_operation
         result(layout)
       rescue StandardError => e
-        model&.abort_operation
+        model&.abort_operation if started
         { errors: ["Chyba pri generovaní: #{e.message}"], warnings: [], info: {} }
       end
 
