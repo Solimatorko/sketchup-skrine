@@ -64,34 +64,38 @@ module Skrine
         { key: key }.merge(p[:drawer_systems][key])
       end
 
-      # Largest nominal runner length that fits the usable depth, or nil.
-      def nominal_length(sys)
+      # Largest nominal runner length that fits the usable depth behind the
+      # front/box start +y0+, or nil.
+      def nominal_length(sys, y0)
         lengths = sys[:lengths].to_s.split(',').map(&:to_f).select(&:positive?)
-        avail = f[:inner_d] - p[:drawer_depth_reserve]
+        avail = f[:inner_d] - (y0 - f[:corpus_y0]) - p[:drawer_depth_reserve]
         lengths.select { |l| l <= avail }.max
       end
 
       def build_drawer_box(col, cell, fbox, name)
         sys = drawer_system
-        nl = nominal_length(sys)
+        y0 = fbox.y2 + 2
+        nl = nominal_length(sys, y0)
         return layout.error("#{name}: žiadna nominálna dĺžka výsuvu (#{sys[:lengths]}) sa nezmestí do hĺbky #{f[:inner_d].round} mm") unless nl
 
-        y0 = fbox.y2 + 2
         z0 = [fbox.z, cell.z0].max + 12
+        # Vertical room actually available in the cavity for this drawer's box,
+        # as opposed to the (possibly taller, due to overlay overlap) front.
+        share_h = [fbox.z2, cell.z0 + cell.h].min - z0
         case sys[:box]
-        when :wood then build_wood_box(col, fbox, name, sys, nl, y0, z0)
-        when :metal then build_metal_box(col, fbox, name, sys, nl, y0, z0)
+        when :wood then build_wood_box(col, fbox, name, sys, nl, y0, z0, share_h)
+        when :metal then build_metal_box(col, fbox, name, sys, nl, y0, z0, share_h)
         else
           layout.hardware_item(kind: :slide, name: "Výsuv #{sys[:label]} NL#{nl.round}", qty: 1, unit: :pair, meta: { drawer: name })
         end
       end
 
-      def build_wood_box(col, fbox, name, sys, nl, y0, z0)
+      def build_wood_box(col, fbox, name, sys, nl, y0, z0, share_h)
         t = p[:drawer_box_thickness]
         tb = p[:drawer_bottom_thickness]
         gr = p[:drawer_bottom_groove]
         outer_w = col.w - 2 * sys[:side_clearance]
-        h = fbox.dz - sys[:height_clearance]
+        h = [fbox.dz - sys[:height_clearance], share_h - sys[:height_clearance]].min
         return layout.error("#{name}: drevený box by mal výšku len #{h.round} mm") if h < 40
 
         edges = edges_for(p[:edge_drawer_box], :long_a)
@@ -113,12 +117,14 @@ module Skrine
         layout.hardware_item(kind: :slide, name: "Výsuv drevený box NL#{nl.round}", qty: 1, unit: :pair, meta: { drawer: name })
       end
 
-      def build_metal_box(col, fbox, name, sys, nl, y0, z0)
+      def build_metal_box(col, fbox, name, sys, nl, y0, z0, share_h)
         classes = sys[:heights].to_s.split(',').map { |s| k, v = s.split(':'); [k.to_s.strip, v.to_f] }
                      .select { |_, v| v.positive? }.sort_by(&:last)
         return layout.error("#{name}: systém #{sys[:label]} nemá výškové triedy") if classes.empty?
 
-        usable = classes.select { |_, hgt| hgt + sys[:front_min_extra] <= fbox.dz }
+        # A class must both fit under the front (+ its minimum extra reveal) and
+        # fit its own height plus a 5 mm top clearance inside the cavity share.
+        usable = classes.select { |_, hgt| hgt + sys[:front_min_extra] <= fbox.dz && hgt + 5 <= share_h }
         cls, ch = usable.last || classes.first
         layout.warn("#{name}: čelo #{fbox.dz.round} mm je nižšie než najnižšia trieda #{cls} (#{ch} mm)") if usable.empty?
 

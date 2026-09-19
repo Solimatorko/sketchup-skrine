@@ -36,7 +36,7 @@ class DrawersTest < Minitest::Test
     l = wardrobe(drawer_system: :wood_box)
     side = l.find('Box bok Ľ Zásuvka S1/P2-1')
     assert_equal 500, side.length
-    assert_equal 151.5, side.width             # 176.5 - 25
+    assert_equal 139.5, side.width             # cavity share 164.5 (fbox.dz 176.5 - 12 mount offset) - 25 clearance
     assert_equal 16, side.thickness
     back = l.find('Box zadný Zásuvka S1/P2-1')
     assert_equal 915, back.length              # 973 - 26 - 32
@@ -82,6 +82,16 @@ class DrawersTest < Minitest::Test
     assert_equal 1, l.hardware.count { |h| h.kind == :profile }   # only the doors
   end
 
+  def test_inner_drawer_runner_length_accounts_for_the_box_start
+    cols = [{ cells: [{ content: :inner_drawers, drawers_count: 2 }] }]
+    l = wardrobe(columns: cols, depth: 560)
+    assert l.valid?, l.errors.join('; ')
+    limit = 18 + l.info[:inner_d]
+    boxes = l.by_category(:drawer_box) + l.hardware.select { |h| h.kind == :drawer_side }
+    assert boxes.any?
+    boxes.each { |b| assert_operator b.box.y2, :<=, limit, b.name }
+  end
+
   def test_too_shallow_for_any_runner_is_error
     l = wardrobe(depth: 250)
     refute l.valid?
@@ -92,5 +102,31 @@ class DrawersTest < Minitest::Test
     cols = [{ cells: [{ content: :drawers, height_mode: :mm, height: 40, drawers_count: 1 }, { content: :empty }] }]
     l = wardrobe(columns: cols, handle: { type: :none })
     assert l.warnings.any? { |w| w.include?('trieda') }
+  end
+
+  def test_single_drawer_wood_box_fits_the_cavity_not_the_front
+    cols = [{ cells: [{ content: :drawers, height_mode: :mm, height: 200, drawers_count: 1 }, { content: :empty }] }]
+    l = wardrobe(columns: cols, handle: { type: :none }, drawer_system: :wood_box)
+    assert l.valid?, l.errors.join('; ')
+    # first cell of column 1 spans z[2182..2382] (inner_z0 118 + inner_h 2264, minus the 200 mm cell height)
+    boxes = l.by_category(:drawer_box).select { |pt| pt.meta[:drawer]&.include?('S1/P1') }
+    assert boxes.any?
+    boxes.each do |pt|
+      assert_operator pt.box.z, :>=, 2182, pt.name
+      assert_operator pt.box.z2, :<=, 2382, pt.name
+    end
+  end
+
+  def test_single_drawer_legrabox_picks_a_class_that_fits_the_cavity
+    cols = [{ cells: [{ content: :drawers, height_mode: :mm, height: 170, drawers_count: 1 }, { content: :empty }] }]
+    l = wardrobe(columns: cols, handle: { type: :none })
+    assert l.valid?, l.errors.join('; ')
+    back = l.find('Zadný diel Zásuvka S1/P1-1')
+    refute_equal 'C', back.meta[:class]
+    sides = l.hardware.select { |h| h.kind == :drawer_side }
+    sides.each do |hw|
+      assert_operator hw.box.z, :>=, 2182, hw.name
+      assert_operator hw.box.z2, :<=, 2382, hw.name
+    end
   end
 end
