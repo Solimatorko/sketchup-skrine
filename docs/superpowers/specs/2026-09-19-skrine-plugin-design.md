@@ -276,3 +276,19 @@ spojovací a závesný materiál. Rozdiel: náš plugin pracuje s celou skriňou
 2. Model Skriňa: obálka, korpus, stĺpce, polia, police, zadná stena, spodok/vrch, lišty.
 3. Dvere + úchytky + pánty. 4. Zásuvky (front_only, wood_box, Blum). 5. Builder v SketchUpe + storage + príkazy.
 6. HtmlDialog. 7. Nárezový plán + exporty. 8. Presety, smoke test, overenie na reálnom modeli.
+
+## 11. Odchýlky v1 od tohto specu (zaznamenané pri implementácii)
+
+- **Toolbar** nie je (vyžaduje ikony); príkazy sú v menu *Extensions › Skrine*
+  (Nová skriňa · Nová skriňa z presetu… · Upraviť označenú · Nárezový plán) a v
+  kontextovom menu skrine. Presety sa ukladajú/načítavajú aj z editora.
+- **`materials.*.thickness`** ako default pre `*_thickness` nie je implementované;
+  materiál má názov a farbu, hrúbky sú výhradne v skupine Konštrukcia/Zásuvky.
+- **`Layout#envelope`** nahrádza `Layout#info` (`corpus_w/h/d`, `inner_w/h/d`,
+  `columns[]`), ktoré dialóg zobrazuje ako vypočítané rozmery.
+- **Spojovací materiál**: počet na spoj je `max(2, ceil(dĺžka / rozteč))`
+  (namiesto „2 + 1/300 mm“).
+- **Rad otvorov** sa do nárezového plánu dostáva ako poznámka pri dielci
+  (stĺpec *Poznámka* v CSV, `<small>` v HTML); nekreslí sa.
+- Súradnice, atribúty a vrstvy sú podľa §3–§5; verzia atribútov `version = 1`
+  (migrácia = doplnenie chýbajúcich parametrov defaultmi).
