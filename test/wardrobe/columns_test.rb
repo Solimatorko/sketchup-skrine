@@ -65,6 +65,18 @@ class ColumnsTest < Minitest::Test
     assert l.errors.any? { |e| e.include?('políc') }
   end
 
+  def test_too_narrow_column_is_skipped_instead_of_building_garbage_parts
+    cols = [
+      { width_mode: :mm, width: 1900, cells: [{}] },
+      { width_mode: :auto, width: 1, cells: [{}] }
+    ]
+    l = wardrobe(columns: cols)
+    refute l.valid?
+    assert l.errors.any? { |e| e.include?('Stĺpec 2') }
+    refute l.find('Polica pevná S2/1')
+    refute l.parts.any? { |part| part.meta[:column] == 2 }
+  end
+
   def test_line_drilling_is_recorded_on_sides_and_partitions
     l = wardrobe(line_drilling: true)
     assert_equal 32, l.find('Bok Ľ').meta[:drilling][:pitch]

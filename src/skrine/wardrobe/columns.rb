@@ -19,7 +19,11 @@ module Skrine
                            left_boundary: i.zero? ? :side : :partition,
                            right_boundary: i == cols.size - 1 ? :side : :partition,
                            params: cols[i], doors: column_doors(cols[i]), handle: column_handle(cols[i]), cells: [])
-          layout.error("Stĺpec #{col.index}: šírka #{w.round(1)} mm je príliš malá") if w < 50
+          if w < 50
+            layout.error("Stĺpec #{col.index}: šírka #{w.round(1)} mm je príliš malá")
+            next
+          end
+
           build_cells(col)
           build_partition(col) if i < cols.size - 1
           build_doors(col)
