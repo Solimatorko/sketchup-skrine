@@ -6,6 +6,7 @@ require_relative 'sketchup/builder'
 require_relative 'sketchup/selection'
 require_relative 'sketchup/commands'
 require_relative 'sketchup/presets'
+require_relative 'sketchup/cutlist_command'
 require_relative 'ui/dialog'
 
 module Skrine

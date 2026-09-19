@@ -30,8 +30,11 @@ module Skrine
         JSON.parse(group.get_attribute(DICT, 'hardware') || '[]').map { |a| Core::HardwareItem.from_attrs(a) }
       end
 
+      # +respond_to?(:get_attribute)+ (rather than is_a?(Sketchup::Group)) keeps
+      # this usable with plain-Ruby fakes in tests; real groups/entities all
+      # respond to get_attribute, so behaviour is unchanged in SketchUp.
       def self.wardrobe?(entity)
-        entity.is_a?(Sketchup::Group) && !entity.get_attribute(DICT, 'type').nil?
+        entity.respond_to?(:get_attribute) && !entity.get_attribute(DICT, 'type').nil?
       end
     end
   end
