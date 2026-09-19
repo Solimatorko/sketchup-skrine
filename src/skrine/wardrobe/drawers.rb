@@ -133,12 +133,13 @@ module Skrine
         bw = col.w - sys[:bottom_width_deduction]
         bl = nl - sys[:bottom_length_deduction]
         layout.part(name: "Dno #{name}", category: :drawer_box, material: :drawer_box, length: bw, width: bl, thickness: tb,
-                    edges: edges_for(:none), box: Core::Box.new(x: col.x0 + (col.w - bw) / 2, y: y0, z: z0, dx: bw, dy: bl, dz: tb),
+                    edges: edges_for(:none), grain: :none,
+                    box: Core::Box.new(x: col.x0 + (col.w - bw) / 2, y: y0, z: z0, dx: bw, dy: bl, dz: tb),
                     meta: { drawer: name, system: sys[:label], class: cls })
         back_w = col.w - sys[:back_width_deduction]
         back_h = ch - sys[:back_height_deduction]
         layout.part(name: "Zadný diel #{name}", category: :drawer_box, material: :drawer_box, length: back_w, width: back_h,
-                    thickness: tback, edges: edges_for(:none),
+                    thickness: tback, edges: edges_for(:none), grain: :none,
                     box: Core::Box.new(x: col.x0 + (col.w - back_w) / 2, y: y0 + bl - tback, z: z0 + tb, dx: back_w, dy: tback, dz: back_h),
                     meta: { drawer: name, system: sys[:label], class: cls })
         [col.x0 + sys[:side_clearance], col.x0 + col.w - sys[:side_clearance] - METAL_SIDE_THICKNESS].each do |x|

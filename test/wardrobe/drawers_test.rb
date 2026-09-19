@@ -30,6 +30,8 @@ class DrawersTest < Minitest::Test
     sides = l.hardware.select { |h| h.kind == :drawer_side }
     assert_equal 12, sides.size
     assert sides.all?(&:box)
+    assert_equal :none, bottom.grain
+    assert_equal :none, back.grain
   end
 
   def test_wood_box_parts
