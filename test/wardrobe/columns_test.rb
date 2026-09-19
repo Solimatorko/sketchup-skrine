@@ -83,4 +83,16 @@ class ColumnsTest < Minitest::Test
     assert_equal 32, l.find('Priečka 1').meta[:drilling][:pitch]
     assert_nil l.find('Strop').meta[:drilling]
   end
+
+  def test_shelves_stay_behind_inset_doors
+    l = wardrobe(doors: { type: :double, mount: :inset })
+    assert l.valid?, l.errors.join('; ')
+    door = l.find('Dvere S1 Ľ')
+    shelves = l.by_category(:shelf)
+    assert shelves.any?
+    shelves.each { |shelf| assert_operator shelf.box.y, :>=, door.box.y2, shelf.name }
+    # All-inset doors don't protrude, so corpus_y0 is 0 here (not 18 as with overlay).
+    # front_clearance (inset_depth 2 + front_thickness 18 = 20) shrinks the shelf depth by 20 mm.
+    assert_box l.find('Polica pevná S1/1'), x: 18, y: 22, z: 718, dx: 973, dy: 563, dz: 18
+  end
 end

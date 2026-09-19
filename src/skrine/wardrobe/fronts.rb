@@ -2,6 +2,16 @@ module Skrine
   module Wardrobe
     # Door fronts: overlay geometry, handles, hinges, lifts and open display.
     module Fronts
+      # Depth the fronts of +col+ occupy in front of the cavity, i.e. how far
+      # shelves/partitions must stay clear of the door/drawer-front plane.
+      # Zero unless the column actually has inset doors.
+      def front_clearance(col)
+        return 0.0 unless p[:doors_enabled] && col.doors[:type] != :none
+        return 0.0 unless col.doors[:mount] == :inset
+
+        p[:inset_depth] + p[:front_thickness]
+      end
+
       # Front rectangle for a column span [z0, z1] (cavity coordinates).
       def front_rect(col, z0, z1, top_boundary, bottom_boundary, mount)
         ol = overlap_h(col.left_boundary, :left, mount)

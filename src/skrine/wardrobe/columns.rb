@@ -68,8 +68,9 @@ module Skrine
       end
 
       def shelf_part(col, z, name, adjustable: false)
-        y = f[:corpus_y0] + p[:shelf_setback]
-        dy = f[:inner_d] - p[:shelf_setback] - p[:shelf_back_clearance]
+        fc = front_clearance(col)
+        y = f[:corpus_y0] + fc + p[:shelf_setback]
+        dy = f[:inner_d] - fc - p[:shelf_setback] - p[:shelf_back_clearance]
         layout.part(
           name: name, category: :shelf, material: :corpus, length: col.w, width: dy, thickness: p[:shelf_thickness],
           edges: edges_for(p[:edge_shelf], :long_a),
