@@ -1,0 +1,11 @@
+{
+  "width": 1200, "height": 2000, "depth": 350,
+  "base_type": "floor", "bottom_strip": false,
+  "doors_enabled": false,
+  "back_mode": "inset",
+  "columns": [
+    { "cells": [ { "content": "shelves", "shelves_count": 5 } ] },
+    { "cells": [ { "content": "shelves", "shelves_count": 5 } ] },
+    { "cells": [ { "content": "shelves", "shelves_count": 5 } ] }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "width": 1200, "height": 500, "depth": 350,
+  "base_type": "floor", "bottom_strip": false,
+  "doors": { "type": "flap_up", "mount": "overlay" },
+  "handle": { "type": "none" },
+  "wall_brackets": 2,
+  "columns": [ { "cells": [ { "content": "shelves", "shelves_count": 1 } ] } ]
+}

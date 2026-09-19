@@ -1,0 +1,11 @@
+{
+  "width": 2000, "height": 2400, "depth": 600,
+  "base_type": "legs", "base_height": 100,
+  "doors": { "type": "double", "mount": "overlay" },
+  "handle": { "type": "profile", "profile_height": 30, "profile_position": "top" },
+  "drawer_system": "blum_legrabox",
+  "columns": [
+    { "cells": [ { "content": "rod" }, { "content": "drawers", "height_mode": "mm", "height": 600, "drawers_count": 3 } ] },
+    { "cells": [ { "content": "shelves", "shelves_count": 4 }, { "content": "drawers", "height_mode": "mm", "height": 600, "drawers_count": 3 } ] }
+  ]
+}
