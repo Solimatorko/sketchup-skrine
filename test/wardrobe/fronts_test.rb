@@ -56,7 +56,6 @@ class FrontsTest < Minitest::Test
   end
 
   def test_doors_disabled_gives_open_corpus_but_keeps_drawer_fronts
-    skip 'needs Task 8 (drawer fronts)'
     l = wardrobe(doors_enabled: false)
     assert_nil l.find('Dvere S1 Ľ')
     assert l.parts.any? { |pt| pt.name.start_with?('Čelo Zásuvka S1') }
@@ -90,7 +89,6 @@ class FrontsTest < Minitest::Test
   end
 
   def test_drilled_handles_are_counted_per_door
-    skip 'needs Task 8 (drawer fronts)'
     l = wardrobe(handle: { type: :drilled, hole_spacing: 128 })
     handles = l.hardware.select { |h| h.kind == :handle }
     assert_equal 4 + 6, handles.sum(&:qty)                   # 4 doors + 6 drawer fronts
