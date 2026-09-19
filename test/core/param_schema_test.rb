@@ -65,4 +65,14 @@ class ParamSchemaTest < Minitest::Test
   def test_duplicate_key_raises
     assert_raises(ArgumentError) { S.new { number :a, 1, label: 'a'; number :a, 2, label: 'b' } }
   end
+
+  def test_defaults_have_correct_types
+    d = SCHEMA.defaults
+    assert_instance_of Float, d[:width], 'number defaults must be Float'
+    assert_instance_of Integer, d[:count], 'integer defaults must be Integer'
+    assert_instance_of TrueClass, d[:flag], 'boolean true defaults must be TrueClass'
+    assert_instance_of String, d[:note], 'string defaults must be String'
+    assert_instance_of Float, d[:columns][0][:thickness], 'nested number defaults must be Float'
+    assert_instance_of Symbol, d[:columns][0][:corner], 'nested enum defaults must be Symbol'
+  end
 end

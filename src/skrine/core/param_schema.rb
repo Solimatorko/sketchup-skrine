@@ -69,7 +69,7 @@ module Skrine
                        items = v.is_a?(Array) ? v : deep_dup(p.default)
                        items.map { |item| p.item_schema.merge_defaults(item) }
                      else
-                       v.nil? ? deep_dup(p.default) : coerce(p, v)
+                       v.nil? ? coerce(p, deep_dup(p.default)) : coerce(p, v)
                      end
         end
       end
