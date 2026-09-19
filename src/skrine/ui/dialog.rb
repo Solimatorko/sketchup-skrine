@@ -13,6 +13,15 @@ module Skrine
         @instance ||= new
       end
 
+      # JSON.generate leaves U+2028/U+2029 unescaped; some WebViews treat those as
+      # JS line terminators even inside a string, which breaks execute_script's
+      # generated source. Escape them to the \u2028/\u2029 literal sequence so the
+      # embedded JS parses them back into the characters instead of choking on them.
+      # (Ruby 3.2's json gem, shipped with SketchUp 2026, has no script_safe: option.)
+      def self.js_json(obj)
+        JSON.generate(obj).gsub("\u2028", '\\u2028').gsub("\u2029", '\\u2029')
+      end
+
       def open_for(group)
         @group = group
         data = Storage.read(group)
@@ -49,7 +58,7 @@ module Skrine
         return unless @params
 
         payload = { type: @type.key, label: @type.label, schema: @type.schema.to_h, state: @params, result: @last || {} }
-        dialog.execute_script("Skrine.init(#{JSON.generate(payload)})")
+        dialog.execute_script("Skrine.init(#{self.class.js_json(payload)})")
       end
 
       def apply(values)
@@ -59,7 +68,7 @@ module Skrine
                 else
                   Builder.rebuild(@group, @params)
                 end
-        dialog.execute_script("Skrine.setResult(#{JSON.generate(@last)})")
+        dialog.execute_script("Skrine.setResult(#{self.class.js_json(@last)})")
       end
 
       def load_preset

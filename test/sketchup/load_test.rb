@@ -29,6 +29,14 @@ class SketchupLoadTest < Minitest::Test
     assert_operator Dir[File.join(dir, '*.json')].size, :>, 0
   end
 
+  # U+2028/U+2029 are valid JSON but break execute_script's generated JS source in
+  # some WebViews; js_json must escape them to the literal  /  sequence.
+  def test_dialog_js_json_escapes_line_and_paragraph_separators
+    result = Skrine::SU::Dialog.js_json({ s: "a b" })
+    assert_includes result, '\\u2028'
+    refute_includes result, " "
+  end
+
   def test_units_mm_conversion
     assert_in_delta 1.0, Skrine::SU::Units.mm(25.4), 1e-9
   end
