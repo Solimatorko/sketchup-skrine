@@ -114,14 +114,28 @@ Všetky rozmery mm. „ratio“ = pomerná časť zo zvyšku po odčítaní pevn
   `bottom_strip_setback`; pri `plinth` boky siahajú na podlahu, sokel je medzi nimi;
   pri `legs` kusovník nožičiek (4 + 2 na každú priečku)
 
-**Konštrukcia**
-- `corpus_thickness` (18), `front_thickness` (18), `back_thickness` (3),
-  `shelf_thickness` (= corpus, prepísateľné), `strip_thickness`
-- `top_mount`: `between_sides` | `on_sides`
+**Konštrukcia** (inšpirované Blum Cabinet Configurator)
+- `panel_thickness` (18) – všeobecná hrúbka korpusu; `front_thickness` (18),
+  `back_thickness` (3), `shelf_thickness` (= panel, prepísateľné), `strip_thickness`,
+  `partition_thickness` (= panel)
+- **Panely korpusu** – `top`, `bottom`, `side_left`, `side_right`, každý:
+  `thickness` (default = panel_thickness), `front_recess`, `back_recess`
+  (odsadenie od prednej/zadnej hrany korpusu); strop a dno navyše
+  `corner_left`/`corner_right`: `inset` (medzi bokmi) | `overlay` (cez bok) a
+  `engagement` (rozmer zapustenia pri čiastočnom prekrytí). Kombinácia
+  „strop overlay, dno inset“ je bežná a musí fungovať.
+- `line_drilling`: `enabled`, `pitch` (32), `offset_front`, `offset_back`,
+  `start_height`, `end_offset` – rad otvorov pre nastaviteľné police; v1 ide do
+  výstupu ako informácia k dielcu (bok/priečka), nekreslí sa.
+- Dialóg zobrazuje **vypočítané vnútorné rozmery** (výška, šírka, hĺbka) a
+  vnútorné rozmery každého stĺpca/poľa, aby bolo vidno, čo sa mení.
 - `back_mode`: `groove` (HDF v drážke, `groove_depth`, `groove_offset`) |
   `overlay` (HDF nalozená zozadu, korpus sa o hrúbku skráti) |
   `inset` („priznaná“ – doska hrúbky `back_inset_thickness` medzi bokmi, police o ňu kratšie)
-- `front_gap` (3) – špára medzi susednými čelami a k okraju
+- **Čelá – presahy a špáry**: `front_gap_h` (3) a `front_gap_v` (3) – špára
+  medzi susednými čelami vodorovne/zvisle; `front_reveal_top/bottom/left/right`
+  (2/0/2/2) – o koľko je čelo kratšie než plný presah na danej strane korpusu
+  (Blum „Gap/overlay“); spolu s `mount` určujú konečný rozmer čela
 - `shelf_setback` (2) – polica zapustená za prednú hranu; `shelf_back_clearance`
 
 **Stĺpce** – `columns: [ { width: {mode: mm|ratio|auto, value}, doors: {…}, handle_override: {…}|nil, cells: [ { height: {mode}, content: shelves|rod|drawers|inner_drawers|empty, shelves_count, drawers_count, drawer_heights: auto|[mm], rod_offset_top } ] } ]`
@@ -131,10 +145,14 @@ Všetky rozmery mm. „ratio“ = pomerná časť zo zvyšku po odčítaní pevn
 - `drawers`: N zásuviek s vonkajšími čelami; čelá vypĺňajú výšku poľa (auto)
   alebo zadané výšky.
 - `inner_drawers`: zásuvky za dverami; čelo zapustené o `inner_drawer_setback`.
+- Soklová zásuvka (Blum SPACE STEP) je mimo v1; architektúra polí ju neskôr
+  umožní ako obsah spodku.
 
 **Dvere (per stĺpec, globálny default)**
 - `doors_enabled` (globálne; false = otvorený korpus / regál)
-- `type`: `none` | `single_left` | `single_right` | `double`
+- `type`: `none` | `single_left` | `single_right` | `double` | `flap_up`
+  (výklop hore – Blum AVENTOS HF/HS/HL/HK; pánt = kovanie `:lift`, zobrazenie
+  „open“ otáča okolo hornej hrany)
 - `mount`: `overlay` | `half_overlay` | `inset`
 - `display`: `closed` | `open` + `open_angle` (len vizualizácia, nemení rozpis)
 - Dvere pokrývajú súvislé úseky polí, ktoré nie sú `drawers`; každý úsek =
@@ -213,12 +231,23 @@ Výstup (HtmlDialog s tabuľkou + tlačidlá exportu):
    hrany (formát `2D 1K` + detail), dekor. Rovnaké dielce sa zlúčia (kľúč:
    material+L+W+T+edges+grain).
 2. **Hranovanie**: metráž ABS na materiál/hrúbku.
-3. **Kovanie**: pánty, výsuvy (typ, nominálna dĺžka), tyče (mm), nožičky,
-   úchytky, profil (mm), podpery políc.
+3. **Kovanie**: pánty, výklopy, výsuvy (typ, nominálna dĺžka), tyče (mm),
+   nožičky, úchytky, profil (mm), podpery políc, spojovací materiál
+   (`joinery`: `dowels` | `confirmat` | `cam_lock` – počet na spoj podľa dĺžky,
+   default 2 + 1/300 mm), závesné kovanie (`wall_brackets`, počet, pre horné
+   skrinky).
 4. **Sumár plôch** m² na materiál (informatívne, bez prirezu).
 
 Exporty: CSV (UTF-8, `;`), CSV pre CutList Optimizer
 (`Length;Width;Qty;Label;Enabled;Grain`), HTML (na tlač).
+
+### 7.1 Inšpirácia Blum Cabinet Configurator
+
+Prevzaté princípy: vonkajší rozmer + živo počítané vnútorné; per-panel nastavenia
+(hrúbka, rohový spoj, odsadenia); presah/špára per strana čela; katalóg kovania
+podľa výrobcu (pánty, výklopy, boxy, výsuvy) s tabuľkami rozmerov; „Extras“ ako
+spojovací a závesný materiál. Rozdiel: náš plugin pracuje s celou skriňou
+(viac stĺpcov/polí) a výstupom je nárezový plán, nie objednávka kovania.
 
 ## 8. Chybové stavy
 
