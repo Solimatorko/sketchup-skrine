@@ -24,28 +24,7 @@ module Skrine
       end
 
       def layout
-        @layout = Core::Layout.new
-        Params::SCHEMA.validate(@p).each { |e| @layout.error(e) }
-        return @layout unless @layout.valid?
-
-        @f = compute_frame
-        check_frame
-        return @layout unless @layout.valid?
-
-        build_corpus
-        build_base
-        build_strips
-        build_back
-        build_columns
-        build_extras
-        @layout.info.merge!(
-          corpus_w: @f[:corpus_w].round(1), corpus_h: @f[:corpus_h].round(1), corpus_d: @f[:corpus_d].round(1),
-          inner_w: @f[:inner_w].round(1), inner_h: @f[:inner_h].round(1), inner_d: @f[:inner_d].round(1)
-        )
-        @layout
-      rescue Core::Sizing::Error => e
-        @layout.error(e.message)
-        @layout
+        @layout || build_layout
       end
 
       # Edge flags from a rule (:none / :front / :all); +visible+ is the key of
@@ -74,6 +53,31 @@ module Skrine
 
       private
 
+      def build_layout
+        @layout = Core::Layout.new
+        Params::SCHEMA.validate(@p).each { |e| @layout.error(e) }
+        return @layout unless @layout.valid?
+
+        @f = compute_frame
+        check_frame
+        return @layout unless @layout.valid?
+
+        build_corpus
+        build_base
+        build_strips
+        build_back
+        build_columns
+        build_extras
+        @layout.info.merge!(
+          corpus_w: @f[:corpus_w].round(1), corpus_h: @f[:corpus_h].round(1), corpus_d: @f[:corpus_d].round(1),
+          inner_w: @f[:inner_w].round(1), inner_h: @f[:inner_h].round(1), inner_d: @f[:inner_d].round(1)
+        )
+        @layout
+      rescue Core::Sizing::Error => e
+        @layout.error(e.message)
+        @layout
+      end
+
       def compute_frame
         f = {}
         f[:t_top] = p[:top][:thickness]
@@ -101,9 +105,9 @@ module Skrine
       end
 
       def check_frame
-        @layout.error("Vnútorná šírka korpusu je #{f[:inner_w].round} mm – zväčši šírku alebo zmenši odsadenia") if f[:inner_w] < 50
-        @layout.error("Vnútorná výška korpusu je #{f[:inner_h].round} mm – zväčši výšku alebo zmenši spodok/odsadenie od stropu") if f[:inner_h] < 50
-        @layout.error("Vnútorná hĺbka korpusu je #{f[:inner_d].round} mm") if f[:inner_d] < 50
+        layout.error("Vnútorná šírka korpusu je #{f[:inner_w].round} mm – zväčši šírku alebo zmenši odsadenia") if f[:inner_w] < 50
+        layout.error("Vnútorná výška korpusu je #{f[:inner_h].round} mm – zväčši výšku alebo zmenši spodok/odsadenie od stropu") if f[:inner_h] < 50
+        layout.error("Vnútorná hĺbka korpusu je #{f[:inner_d].round} mm") if f[:inner_d] < 50
       end
 
       def fronts_protrude
