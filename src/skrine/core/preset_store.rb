@@ -33,14 +33,18 @@ module Skrine
         end.compact
       end
 
-      # True iff +file+ resolves (after expanding . and ..) to a *.json file inside
-      # builtin_dir or +user_dir+ – guards read against being pointed at an
-      # arbitrary path on disk (e.g. from a dialog callback or the dev server).
+      # True iff +file+ resolves to a *.json file inside builtin_dir or +user_dir+ –
+      # guards read against being pointed at an arbitrary path on disk (e.g. from a
+      # dialog callback or the dev server). Resolves symlinks on both sides (the repo
+      # itself is often symlinked into SketchUp's Plugins folder) so a legitimate
+      # preset reached through a symlink isn't rejected, and symlink tricks can't
+      # sneak a path outside the allowed folders past the plain-string comparison.
       def self.allowed?(file, user_dir: self.user_dir)
-        path = File.expand_path(file)
+        path = File.exist?(file) ? File.realpath(file) : File.expand_path(file)
         return false unless path.end_with?('.json')
 
-        [builtin_dir, user_dir].compact.any? { |dir| path.start_with?("#{File.expand_path(dir)}#{File::SEPARATOR}") }
+        [builtin_dir, user_dir].compact.select { |d| Dir.exist?(d) }
+                                .any? { |dir| path.start_with?("#{File.realpath(dir)}#{File::SEPARATOR}") }
       end
 
       def self.read(file, user_dir: self.user_dir)

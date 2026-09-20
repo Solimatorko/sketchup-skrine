@@ -31,4 +31,16 @@ class PresetStoreTest < Minitest::Test
     entry = S.all(user_dir: Dir.mktmpdir).first
     assert_equal entry[:params]['width'], S.read(entry[:file])['width']
   end
+
+  def test_allowed_resolves_a_preset_reached_through_a_symlinked_folder
+    Dir.mktmpdir do |real_dir|
+      path = S.save_named({ 'width' => 1500 }, 'Sym preset', user_dir: real_dir)
+      Dir.mktmpdir do |link_parent|
+        link_dir = File.join(link_parent, 'link')
+        File.symlink(real_dir, link_dir)
+        symlinked_file = File.join(link_dir, File.basename(path))
+        assert S.allowed?(symlinked_file, user_dir: real_dir)
+      end
+    end
+  end
 end
