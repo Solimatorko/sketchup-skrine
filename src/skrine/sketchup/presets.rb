@@ -1,13 +1,15 @@
 require 'json'
+require 'fileutils'
 
 module Skrine
   module SU
     module Presets
-      # Repo-level presets/ (works with the dev symlink; packaged builds copy presets next to src).
-      DIR = [File.expand_path('../../../presets', __dir__), File.expand_path('../presets', __dir__)].find { |d| Dir.exist?(d) }
+      # Built-in repo presets/ (works with the dev symlink; packaged builds copy presets next to src).
+      DIR = Core::PresetStore.builtin_dir
 
       def self.save(json)
-        path = UI.savepanel('Uložiť preset', DIR, 'skrina.json')
+        FileUtils.mkdir_p(Core::PresetStore.user_dir)
+        path = UI.savepanel('Uložiť preset', Core::PresetStore.user_dir, 'skrina.json')
         return unless path
 
         path += '.json' unless path.end_with?('.json')

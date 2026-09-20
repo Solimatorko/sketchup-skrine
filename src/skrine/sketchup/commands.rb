@@ -21,16 +21,21 @@ module Skrine
       # Loads a preset JSON file and creates a wardrobe from it directly
       # (skips the editor's live defaults, unlike new_object).
       def new_from_preset
-        params = Presets.load
-        return unless params
+        path = UI.openpanel('Načítať preset', Core::PresetStore.user_dir, 'JSON|*.json||')
+        new_from_preset_file(path) if path
+      end
 
-        type = Core::Registry.fetch(:wardrobe)
-        res = Builder.create(Sketchup.active_model, type.key, type.schema.merge_defaults(params))
+      def new_from_preset_file(file)
+        params = Core::PresetStore.read(file)
+        model = Sketchup.active_model
+        res = Builder.create(model, :wardrobe, Core::Registry.fetch(:wardrobe).schema.merge_defaults(params))
         if res[:errors].any?
           UI.messagebox("Skriňa sa nevytvorila:\n#{res[:errors].join("\n")}")
         else
           open_editor(res[:group])
         end
+      rescue JSON::ParserError, Errno::ENOENT => e
+        UI.messagebox("Preset sa nedá načítať: #{e.message}")
       end
 
       def edit_selected
