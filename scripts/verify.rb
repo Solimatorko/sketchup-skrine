@@ -33,14 +33,22 @@ begin
     p2 = Skrine::Wardrobe::Params::SCHEMA.merge_defaults(d[:params]).merge(width: 2400.0, door_display: :open)
     res = Skrine::SU::Builder.rebuild(g, p2)
     lines << "rebuild 2400/open: errors=#{res[:errors].inspect} warnings=#{res[:warnings].size} inner_w=#{res[:info][:inner_w]}"
+    first = g.entities.grep(Sketchup::Group).find { |e| e.attribute_dictionary('Skrine::Part') }
+    dict = first.attribute_dictionary('Skrine::Part')
+    lines << "attr dict responds to_h=#{dict.respond_to?(:to_h)} keys=#{dict.keys.inspect}"
+    lines << "attr to_h=#{(dict.respond_to?(:to_h) ? dict.to_h : {}).inspect[0, 300]}"
+    lines << "attr manual=#{dict.keys.to_h { |k| [k, dict[k]] }.inspect[0, 300]}"
     cl = Skrine::SU::CutlistCommand.collect([g])
     lines << "cutlist: #{cl.rows.size} rows, #{cl.hardware_rows.size} hardware rows, csv bytes #{cl.to_csv.bytesize}"
+    cl.rows.each { |r| lines << "  row: #{r.material_label} #{r.thickness} #{r.name} x#{r.qty} #{r.length}x#{r.width}" }
     model.selection.clear
     model.selection.add(g)
     Skrine::SU::Commands.edit_selected
     lines << 'dialog opened'
   end
   model.active_view.zoom_extents
+  model.active_view.write_image('/tmp/skrine-verify.png', 1600, 1000, true)
+  lines << 'screenshot /tmp/skrine-verify.png'
 rescue StandardError => e
   lines << "EXCEPTION: #{e.class}: #{e.message}\n#{e.backtrace.first(8).join("\n")}"
 end
