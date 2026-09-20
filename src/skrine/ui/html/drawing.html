@@ -1,15 +1,21 @@
 <!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><title>Drawing</title><link rel="stylesheet" href="style.css">
-<style>.host{width:820px;height:620px;border:1px solid #ccc;display:inline-block;margin:6px;position:relative}#log{font:12px monospace;white-space:pre}</style></head>
-<body><div id="views"></div><div id="log"></div>
+<style>.host{width:820px;height:620px;border:1px solid #ccc;display:inline-block;margin:6px;position:relative}#log{font:12px monospace;white-space:pre}.host.big{width:1400px;height:900px}.host.small{width:700px;height:500px}</style></head>
+<body><div id="views"></div><div id="sizes"></div><div id="log"></div>
 <script src="drawing.js"></script><script>
 fetch('/state').then(r => r.json()).then(p => {
   const scene = p.preview.scene; const log = document.getElementById('log');
+  const cb = { onSelect: (t) => { log.textContent = JSON.stringify(t) + '\n' + log.textContent; },
+    onHover: (b) => { if (b) log.textContent = 'hover ' + b.name + '\n' + log.textContent.split('\n').slice(0, 8).join('\n'); },
+    onEditDim: (d) => { log.textContent = 'edit ' + d.id + ' ' + d.edit + '\n' + log.textContent; } };
   ['front', 'front_open', 'side', 'plan'].forEach((view) => {
     const host = document.createElement('div'); host.className = 'host'; document.getElementById('views').appendChild(host);
-    Drawing.render(host, scene, { view, selection: { kind: 'column', column: 1 },
-      onSelect: (t) => { log.textContent = JSON.stringify(t) + '\n' + log.textContent; },
-      onHover: (b) => { if (b) log.textContent = 'hover ' + b.name + '\n' + log.textContent.split('\n').slice(0, 8).join('\n'); },
-      onEditDim: (d) => { log.textContent = 'edit ' + d.id + ' ' + d.edit + '\n' + log.textContent; } });
+    Drawing.render(host, scene, Object.assign({ view, selection: { kind: 'column', column: 1 } }, cb));
   });
+  // Regression hosts: dimension labels must stay fully on-screen at both a large (1400x900)
+  // and a small (700x500) host size, regardless of the resulting drawing scale.
+  const big = document.createElement('div'); big.className = 'host big'; document.getElementById('sizes').appendChild(big);
+  Drawing.render(big, scene, Object.assign({ view: 'front', selection: { kind: 'column', column: 1 } }, cb));
+  const small = document.createElement('div'); small.className = 'host small'; document.getElementById('sizes').appendChild(small);
+  Drawing.render(small, scene, Object.assign({ view: 'front', selection: { kind: 'column', column: 1 } }, cb));
 });
 </script></body></html>
