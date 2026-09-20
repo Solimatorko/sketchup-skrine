@@ -1,0 +1,15 @@
+<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><title>Drawing</title><link rel="stylesheet" href="style.css">
+<style>.host{width:820px;height:620px;border:1px solid #ccc;display:inline-block;margin:6px;position:relative}#log{font:12px monospace;white-space:pre}</style></head>
+<body><div id="views"></div><div id="log"></div>
+<script src="drawing.js"></script><script>
+fetch('/state').then(r => r.json()).then(p => {
+  const scene = p.preview.scene; const log = document.getElementById('log');
+  ['front', 'front_open', 'side', 'plan'].forEach((view) => {
+    const host = document.createElement('div'); host.className = 'host'; document.getElementById('views').appendChild(host);
+    Drawing.render(host, scene, { view, selection: { kind: 'column', column: 1 },
+      onSelect: (t) => { log.textContent = JSON.stringify(t) + '\n' + log.textContent; },
+      onHover: (b) => { if (b) log.textContent = 'hover ' + b.name + '\n' + log.textContent.split('\n').slice(0, 8).join('\n'); },
+      onEditDim: (d) => { log.textContent = 'edit ' + d.id + ' ' + d.edit + '\n' + log.textContent; } });
+  });
+});
+</script></body></html>

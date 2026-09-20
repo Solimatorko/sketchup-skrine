@@ -34,3 +34,11 @@ footer { border-top: 1px solid #ddd; background: #fff; padding: 6px 12px; max-he
 .msg.error { background: #fde8e8; color: #9b1c1c; }
 .msg.warn { background: #fff4e0; color: #8a5300; }
 #info { font-size: 12px; color: #444; line-height: 1.5; }
+.drawing rect.box{stroke:#333;stroke-width:.6}
+.drawing rect.box.hover{stroke:#f28c28;stroke-width:2}
+.drawing rect.box.selected{fill:#f28c28 !important;fill-opacity:.35;stroke:#f28c28;stroke-width:1.5}
+.drawing rect.cell{fill:transparent;stroke:none}
+.drawing rect.cell.selected{fill:#f28c28;fill-opacity:.12}
+.drawing .dim line{stroke:#555;stroke-width:1}
+.drawing .dim text{font:11px sans-serif;fill:#333}
+.drawing .dim.editable text{fill:#1a56c4;cursor:pointer;text-decoration:underline}
