@@ -10,7 +10,9 @@ begin
   load File.join(root, 'src', 'skrine', 'loader.rb')
   lines << "loaded Skrine #{Skrine::VERSION} (Ruby #{RUBY_VERSION}, SketchUp #{Sketchup.version})"
   model = Sketchup.active_model
-  x = 0.0
+  # Place the demo wardrobes beyond the existing model so they do not overlap.
+  bounds = model.bounds
+  x = bounds.valid? ? bounds.max.x * 25.4 + 1500.0 : 0.0
   groups = []
   Dir[File.join(root, 'presets', '*.json')].sort.each do |file|
     params = Skrine::Wardrobe::Params::SCHEMA.merge_defaults(JSON.parse(File.read(file)))
@@ -46,7 +48,9 @@ begin
     Skrine::SU::Commands.edit_selected
     lines << 'dialog opened'
   end
-  model.active_view.zoom_extents
+  model.selection.clear
+  groups.each { |grp| model.selection.add(grp) }
+  model.active_view.zoom(groups) unless groups.empty?
   model.active_view.write_image('/tmp/skrine-verify.png', 1600, 1000, true)
   lines << 'screenshot /tmp/skrine-verify.png'
 rescue StandardError => e
