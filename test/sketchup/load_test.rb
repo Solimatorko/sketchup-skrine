@@ -10,6 +10,7 @@ require 'skrine/sketchup/selection'
 require 'skrine/sketchup/commands'
 require 'skrine/sketchup/presets'
 require 'skrine/sketchup/cutlist_command'
+require 'skrine/ui/preview_service'
 require 'skrine/ui/dialog'
 
 class SketchupLoadTest < Minitest::Test
@@ -22,6 +23,7 @@ class SketchupLoadTest < Minitest::Test
     assert defined?(Skrine::SU::Presets)
     assert defined?(Skrine::SU::Dialog)
     assert defined?(Skrine::SU::CutlistCommand)
+    assert defined?(Skrine::UI::PreviewService)
   end
 
   def test_commands_expose_new_from_preset

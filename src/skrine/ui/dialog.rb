@@ -4,6 +4,7 @@ require_relative '../sketchup/storage'
 require_relative '../sketchup/presets'
 require_relative '../sketchup/cutlist_command'
 require_relative '../sketchup/commands'
+require_relative 'preview_service'
 
 module Skrine
   module SU
@@ -47,12 +48,19 @@ module Skrine
       private
 
       def build_dialog
-        d = UI::HtmlDialog.new(dialog_title: 'Skrine', preferences_key: 'sk.skrine.editor', width: 560, height: 920,
+        d = UI::HtmlDialog.new(dialog_title: 'Skrine', preferences_key: 'sk.skrine.editor', width: 1320, height: 880,
                                resizable: true, style: UI::HtmlDialog::STYLE_DIALOG)
         d.set_file(HTML)
         d.add_action_callback('ready') { push_state }
         d.add_action_callback('log') { |_, msg| puts "[Skrine] #{msg}" }
+        d.add_action_callback('preview') { |_, json| send_js('Skrine.setPreview', PreviewService.preview(@type, JSON.parse(json))) }
         d.add_action_callback('apply') { |_, json| apply(JSON.parse(json)) }
+        d.add_action_callback('gallery') { send_js('Skrine.showGallery', PreviewService.gallery(@type)) }
+        d.add_action_callback('use_preset') { |_, file, mode| use_preset(file, mode) }
+        d.add_action_callback('save_named_preset') do |_, json, name|
+          path = Core::PresetStore.save_named(JSON.parse(json), name)
+          UI.messagebox("Preset uložený do galérie:\n#{path}")
+        end
         d.add_action_callback('save_preset') { |_, json| Presets.save(json) }
         d.add_action_callback('load_preset') { load_preset }
         d.add_action_callback('cutlist') { run_cutlist }
@@ -60,11 +68,25 @@ module Skrine
         d
       end
 
+      def send_js(function, obj)
+        dialog.execute_script("#{function}(#{self.class.js_json(obj)})")
+      end
+
       def push_state
         return unless @params
 
-        payload = { type: @type.key, label: @type.label, schema: @type.schema.to_h, state: @params, result: @last || {} }
-        dialog.execute_script("Skrine.init(#{self.class.js_json(payload)})")
+        send_js('Skrine.init', PreviewService.init_payload(@type, @params, @last || {}))
+      end
+
+      def use_preset(file, mode)
+        if mode == 'new'
+          Commands.new_from_preset_file(file)
+        else
+          apply(Core::PresetStore.read(file))
+          push_state
+        end
+      rescue JSON::ParserError, Errno::ENOENT => e
+        UI.messagebox("Preset sa nedá načítať: #{e.message}")
       end
 
       def apply(values)
