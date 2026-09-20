@@ -1534,7 +1534,8 @@ const Skrine = {
     num.disabled = obj[modeKey] === 'auto';
     num.onchange = () => { const v = parseFloat(num.value); if (!Number.isNaN(v)) { obj[valueKey] = v; this.changed(); } };
     const modes = el('div');
-    Cards.radio(modes, { options: this.options(['columns', modeKey === 'width_mode' ? 'width_mode' : 'cells', ...(modeKey === 'height_mode' ? ['height_mode'] : [])].filter(Boolean)), value: obj[modeKey], icons: 'mode', small: true,
+    const optPath = modeKey === 'width_mode' ? ['columns', 'width_mode'] : ['columns', 'cells', 'height_mode'];
+    Cards.radio(modes, { options: this.options(optPath), value: obj[modeKey], icons: 'mode', small: true,
       onChange: (v) => { obj[modeKey] = v; num.disabled = v === 'auto'; this.changed(); } });
     wrap.append(modes, el('label', { class: 'row' }, el('span', {}, obj[modeKey] === 'ratio' ? 'Pomer' : 'Hodnota'), num, el('em', {}, 'mm')));
     return wrap;
@@ -1729,7 +1730,6 @@ window.addEventListener('load', () => Skrine.requestState(0));
 ```
 
 Poznámky pre implementáciu:
-- `sizeRow`: cesta k `options` je pre šírku `['columns','width_mode']`, pre výšku `['columns','cells','height_mode']` – zjednoduš výraz na `this.options(modeKey === 'width_mode' ? ['columns', 'width_mode'] : ['columns', 'cells', 'height_mode'])`.
 - `Form.ICON_GROUPS.type: null` je len výslovné „bez ikon“ pre kľúč `type` v Rozšírených (dvere sú v paneli).
 - `window.prompt` v `UI::HtmlDialog` funguje (CEF); v dev serveri tiež.
 
