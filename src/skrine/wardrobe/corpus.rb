@@ -83,7 +83,8 @@ module Skrine
         layout.part(
           name: 'Sokel', category: :strip, material: :strip, length: w, width: h, thickness: t,
           edges: edges_for(p[:edge_strip], :long_a),
-          box: Core::Box.new(x: x0, y: p[:bottom_strip_setback].to_f, z: p[:strip_floor_clearance].to_f, dx: w, dy: t, dz: h)
+          box: Core::Box.new(x: x0, y: p[:bottom_strip_setback].to_f, z: p[:strip_floor_clearance].to_f, dx: w, dy: t, dz: h),
+          meta: { strip: :plinth }
         )
       end
 
@@ -102,7 +103,8 @@ module Skrine
         layout.part(
           name: 'Lišta horná', category: :strip, material: :strip, length: f[:corpus_w], width: h, thickness: t,
           edges: edges_for(p[:edge_strip], :long_a),
-          box: Core::Box.new(x: f[:corpus_x0], y: p[:top_strip_setback].to_f, z: f[:corpus_z0] + f[:corpus_h], dx: f[:corpus_w], dy: t, dz: h)
+          box: Core::Box.new(x: f[:corpus_x0], y: p[:top_strip_setback].to_f, z: f[:corpus_z0] + f[:corpus_h], dx: f[:corpus_w], dy: t, dz: h),
+          meta: { strip: :top }
         )
       end
 
@@ -117,7 +119,8 @@ module Skrine
         layout.part(
           name: "Lišta zaslepovacia #{which == :left ? 'Ľ' : 'P'}", category: :filler, material: :strip,
           length: h, width: gap, thickness: t, edges: edges_for(p[:edge_strip], :long_a),
-          box: Core::Box.new(x: x, y: 0.0, z: z0, dx: gap, dy: t, dz: h)
+          box: Core::Box.new(x: x, y: 0.0, z: z0, dx: gap, dy: t, dz: h),
+          meta: { strip: :filler, side: which }
         )
       end
 

@@ -28,8 +28,9 @@ module Skrine
           build_partition(col) if i < cols.size - 1
           build_doors(col)
           layout.info[:columns] << {
-            index: col.index, inner_w: w.round(1),
-            cells: col.cells.map { |c| { index: c.index, inner_h: c.h.round(1), content: c.params[:content] } }
+            index: col.index, x: x0.round(1), inner_w: w.round(1),
+            cells: col.cells.map { |c| { index: c.index, x: x0.round(1), z: c.z0.round(1), w: w.round(1), h: c.h.round(1),
+                                         inner_h: c.h.round(1), content: c.params[:content] } }
           }
         end
       end
@@ -62,12 +63,14 @@ module Skrine
                           bottom_boundary: i == cells.size - 1 ? :panel : :shelf, params: cp)
           col.cells << cell
           build_cell_content(col, cell)
-          shelf_part(col, cell.z0 - ts, "Polica pevná S#{col.index}/#{cell.index}") unless i == cells.size - 1
+          unless i == cells.size - 1
+            shelf_part(col, cell.z0 - ts, "Polica pevná S#{col.index}/#{cell.index}", cell: cell.index)
+          end
           z1 = cell.z0 - ts
         end
       end
 
-      def shelf_part(col, z, name, adjustable: false)
+      def shelf_part(col, z, name, adjustable: false, cell: nil)
         fc = front_clearance(col)
         y = f[:corpus_y0] + fc + p[:shelf_setback]
         dy = f[:inner_d] - fc - p[:shelf_setback] - p[:shelf_back_clearance]
@@ -75,17 +78,24 @@ module Skrine
           name: name, category: :shelf, material: :corpus, length: col.w, width: dy, thickness: p[:shelf_thickness],
           edges: edges_for(p[:edge_shelf], :long_a),
           box: Core::Box.new(x: col.x0, y: y, z: z, dx: col.w, dy: dy, dz: p[:shelf_thickness]),
-          meta: { column: col.index, adjustable: adjustable }
+          meta: { column: col.index, cell: cell, adjustable: adjustable }
         )
       end
 
+      # Dispatches by cell content and tags every part/hardware item newly
+      # created during the dispatch with the owning column/cell, so the
+      # visual editor can map scene objects back to the layout model.
       def build_cell_content(col, cell)
+        parts_before = layout.parts.size
+        hw_before = layout.hardware.size
         case cell.params[:content]
         when :shelves then build_adjustable_shelves(col, cell)
         when :rod then build_rod(col, cell)
         when :drawers then build_drawers(col, cell, inner: false)
         when :inner_drawers then build_drawers(col, cell, inner: true)
         end
+        (layout.parts[parts_before..] || []).each { |pt| pt.meta[:column] ||= col.index; pt.meta[:cell] ||= cell.index }
+        (layout.hardware[hw_before..] || []).each { |hw| hw.meta[:column] ||= col.index; hw.meta[:cell] ||= cell.index }
       end
 
       def build_adjustable_shelves(col, cell)
@@ -97,7 +107,8 @@ module Skrine
         return layout.error("S#{col.index}/P#{cell.index}: #{n} políc sa nezmestí do #{cell.h.round} mm") if gap < 20
 
         n.times do |k|
-          shelf_part(col, cell.z0 + gap * (k + 1) + ts * k, "Polica S#{col.index}/P#{cell.index}-#{k + 1}", adjustable: true)
+          shelf_part(col, cell.z0 + gap * (k + 1) + ts * k, "Polica S#{col.index}/P#{cell.index}-#{k + 1}",
+                     adjustable: true, cell: cell.index)
         end
         layout.hardware_item(kind: :shelf_support, name: 'Podpera police', qty: 4 * n, unit: :pcs)
       end

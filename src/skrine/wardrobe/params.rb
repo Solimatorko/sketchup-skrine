@@ -91,6 +91,7 @@ module Skrine
 
       SCHEMA = S.new do
         group :dims, 'Rozmery' do
+          enum :placement, :between_walls, options: %i[between_walls corner_left corner_right free], label: 'Osadenie'
           number :width, 2000, label: 'Šírka (vonkajšia)', min: 200, max: 10_000
           number :height, 2400, label: 'Výška (vonkajšia)', min: 200, max: 4000
           number :depth, 600, label: 'Hĺbka (vonkajšia)', min: 100, max: 1500
