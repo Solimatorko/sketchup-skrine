@@ -26,6 +26,7 @@ const el = (tag, attrs = {}, ...children) => {
 const Skrine = {
   schema: null, state: null, modules: [], scene: null, info: {}, errors: [], warnings: [],
   selection: { kind: 'global' }, view: 'front', auto: true, advancedTab: 'construction', previewTimer: null, applyTimer: null,
+  pendingDimEdit: null, dimError: null, dimErrorTimer: null,
 
   init(payload) {
     this.schema = payload.schema;
@@ -48,6 +49,18 @@ const Skrine = {
   setPreview(pv) {
     this.errors = pv.errors || []; this.warnings = pv.warnings || []; this.info = pv.info || {};
     if (pv.scene) this.scene = pv.scene;
+    // A dimension edit is tentatively applied to state before we know whether it is valid.
+    // Clear the pending marker on any preview result; if it produced errors, undo it.
+    if (this.pendingDimEdit) {
+      const pending = this.pendingDimEdit;
+      this.pendingDimEdit = null;
+      if (this.errors.length) {
+        this.revertDimEdit(pending);
+        this.dimError = pending.dimId;
+        clearTimeout(this.dimErrorTimer);
+        this.dimErrorTimer = setTimeout(() => { this.dimError = null; this.drawScene(); }, 2000);
+      }
+    }
     this.drawScene(); this.renderMessages(); this.renderInfo();
   },
   setResult(r) {
@@ -87,7 +100,7 @@ const Skrine = {
     const host = document.getElementById('drawing');
     if (!this.scene) return;
     Drawing.render(host, this.scene, {
-      view: this.view, selection: this.selection,
+      view: this.view, selection: this.selection, errorDim: this.dimError,
       onSelect: (t) => this.select(t),
       onHover: (b) => { host.querySelectorAll('rect.box.hover').forEach((r) => r.classList.remove('hover')); if (b) { const r = host.querySelector(`[data-id="${b.id}"]`); if (r) r.classList.add('hover'); } },
       onEditDim: (d, pos) => this.editDim(d, pos)
@@ -105,38 +118,77 @@ const Skrine = {
     host.querySelectorAll('.dim-input').forEach((i) => i.remove());
     const input = el('input', { class: 'dim-input', type: 'number', value: dim.value });
     input.style.left = (pos.x - 10) + 'px'; input.style.top = (pos.y - 4) + 'px';
-    const commit = () => { const v = parseFloat(input.value); input.remove(); if (!Number.isNaN(v) && v > 0) this.setPath(dim.edit, v); };
-    input.onkeydown = (e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') input.remove(); };
+    // Enter, Escape and blur can all fire on the same input (e.g. Enter's handler
+    // removes it, then the browser still delivers the pending blur) — guard so the
+    // second call doesn't try to re-remove an already-detached node.
+    let done = false;
+    const commit = () => {
+      if (done) return; done = true;
+      const v = parseFloat(input.value);
+      if (input.isConnected) input.remove();
+      if (Number.isNaN(v) || v <= 0) return;
+      // Remember the pre-edit value/mode so a failed preview can be undone.
+      const { obj, last, modeKey } = this.resolvePath(dim.edit);
+      this.pendingDimEdit = { path: dim.edit, dimId: dim.id, modeKey, prevValue: obj[last], prevMode: modeKey ? obj[modeKey] : null };
+      this.setPath(dim.edit, v);
+    };
+    input.onkeydown = (e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { done = true; input.remove(); } };
     input.onblur = commit;
     host.appendChild(input); input.focus(); input.select();
   },
 
-  // 'columns.1.cells.0.height' → sets value and switches the size mode to mm.
-  setPath(path, value) {
+  // 'columns.1.cells.0.height' → { obj: <cell>, last: 'height', keys, modeKey: 'height_mode' }
+  resolvePath(path) {
     const keys = path.split('.'); let obj = this.state;
     keys.slice(0, -1).forEach((k) => { obj = obj[/^\d+$/.test(k) ? Number(k) : k]; });
     const last = keys[keys.length - 1];
+    const modeKey = keys.length > 1 && last === 'width' ? 'width_mode' : keys.length > 1 && last === 'height' ? 'height_mode' : null;
+    return { obj, last, keys, modeKey };
+  },
+
+  // Sets value and (for a nested column/cell path) switches the size mode to mm.
+  setPath(path, value) {
+    const { obj, last, modeKey } = this.resolvePath(path);
     obj[last] = value;
-    if (last === 'width' && keys.length > 1) obj.width_mode = 'mm';
-    if (last === 'height' && keys.length > 1) obj.height_mode = 'mm';
+    if (modeKey) obj[modeKey] = 'mm';
     this.changed(); this.renderToolbar(); this.renderPanel();
+  },
+
+  // Restores a dimension edit that the preview rejected, without re-triggering a mode switch.
+  revertDimEdit(pending) {
+    const { obj, last } = this.resolvePath(pending.path);
+    obj[last] = pending.prevValue;
+    if (pending.modeKey) obj[pending.modeKey] = pending.prevMode;
+    this.renderToolbar(); this.renderPanel();
   },
 
   // ---------- panels ----------
   renderPanel() {
-    const body = document.getElementById('panel-body'); body.innerHTML = '';
+    const body = document.getElementById('panel-body');
+    const active = document.activeElement;
+    const focusKey = active && body.contains(active) && active.dataset && active.dataset.key ? active.dataset.key : null;
+    const selStart = focusKey && 'selectionStart' in active ? active.selectionStart : null;
+    body.innerHTML = '';
     const s = this.selection;
     if (s.kind === 'column' && this.state.columns[s.column - 1]) this.panelColumn(body, s.column - 1);
     else if (s.kind === 'cell' && this.state.columns[s.column - 1] && this.state.columns[s.column - 1].cells[s.cell - 1]) this.panelCell(body, s.column - 1, s.cell - 1);
     else if (s.kind === 'base') this.panelBase(body);
     else if (s.kind === 'construction') this.panelConstruction(body);
     else this.panelGlobal(body);
+    if (focusKey) {
+      const again = body.querySelector(`[data-key="${focusKey}"]`);
+      if (again) { again.focus(); if (selStart != null && 'setSelectionRange' in again) { try { again.setSelectionRange(selStart, selStart); } catch (e) { /* not a text-selectable input */ } } }
+    }
   },
 
+  // `after` (e.g. re-rendering the whole panel) runs on the next tick so the browser
+  // finishes its own focus handling for the number spinner before we rebuild the DOM;
+  // renderPanel() then restores focus to the field with the same data-key.
   num(obj, key, label, { unit = 'mm', min, max, step = 1, after } = {}) {
     const input = el('input', { type: 'number', value: obj[key], step });
+    input.dataset.key = key;
     if (min != null) input.min = min; if (max != null) input.max = max;
-    input.onchange = () => { const v = parseFloat(input.value); if (!Number.isNaN(v)) { obj[key] = v; this.changed(); if (after) after(); } };
+    input.onchange = () => { const v = parseFloat(input.value); if (!Number.isNaN(v)) { obj[key] = v; this.changed(); if (after) setTimeout(after, 0); } };
     return el('label', { class: 'row' }, el('span', {}, label), input, el('em', {}, unit));
   },
   toggle(obj, key, label, { after } = {}) {
@@ -178,6 +230,13 @@ const Skrine = {
       body.append(this.h3('Zobrazenie dverí'));
       body.append(this.cards(st, 'door_display', ['door_display'], null, { small: true }));
       if (st.door_display === 'open') body.append(this.num(st, 'open_angle', 'Uhol otvorenia', { unit: '°' }));
+      const details = el('details');
+      details.append(el('summary', {}, 'Ďalšie'));
+      details.append(this.num(st, 'door_max_width', 'Max. odporúčaná šírka krídla'));
+      const hingeInput = el('input', { type: 'text', value: st.hinge_table || '' });
+      hingeInput.onchange = () => { st.hinge_table = hingeInput.value; this.changed(); };
+      details.append(el('label', { class: 'row' }, el('span', {}, 'Pánty: do výšky:počet, …'), hingeInput, el('em')));
+      body.append(details);
     }
     body.append(this.h3('Úchytka'));
     body.append(this.handleFields(st.handle));
@@ -201,7 +260,7 @@ const Skrine = {
   handleFields(h) {
     const wrap = el('div');
     wrap.append(this.cards(h, 'type', ['handle', 'type'], 'handle', { after: () => this.renderPanel() }));
-    if (h.type === 'drilled') { wrap.append(this.num(h, 'hole_spacing', 'Rozteč otvorov'), this.num(h, 'offset_edge', 'Odsadenie od hrany')); }
+    if (h.type === 'drilled') { wrap.append(this.num(h, 'hole_spacing', 'Rozteč otvorov'), this.num(h, 'offset_edge', 'Odsadenie od hrany'), this.cards(h, 'orientation', ['handle', 'orientation'], null, { small: true })); }
     if (h.type === 'profile') { wrap.append(this.num(h, 'profile_height', 'Výška profilu'), this.cards(h, 'profile_position', ['handle', 'profile_position'], null, { small: true })); }
     return wrap;
   },

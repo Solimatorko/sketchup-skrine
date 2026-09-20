@@ -82,14 +82,15 @@ const Drawing = {
     dims.forEach((d) => {
       const text = this.fmt(d.value);
       const editable = d.edit && opts.interactive !== false;
+      const cls = 'dim' + (editable ? ' editable' : '') + (opts.errorDim === d.id ? ' error' : '');
       if (d.orient === 'h') {
         const y = hDimY(d);
         const x1 = X(d.from); const x2 = X(d.to);
-        parts.push(`<g class="dim${editable ? ' editable' : ''}" data-dim="${d.id}"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><line x1="${x1}" y1="${y - 5}" x2="${x1}" y2="${y + 5}"/><line x1="${x2}" y1="${y - 5}" x2="${x2}" y2="${y + 5}"/><text x="${(x1 + x2) / 2}" y="${y - 4}" text-anchor="middle">${text}</text></g>`);
+        parts.push(`<g class="${cls}" data-dim="${d.id}"><line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><line x1="${x1}" y1="${y - 5}" x2="${x1}" y2="${y + 5}"/><line x1="${x2}" y1="${y - 5}" x2="${x2}" y2="${y + 5}"/><text x="${(x1 + x2) / 2}" y="${y - 4}" text-anchor="middle">${text}</text></g>`);
       } else {
         const x = vDimX(d);
         const y1 = ay === 'z' ? Y(d.to) : Y(d.from); const y2 = ay === 'z' ? Y(d.from) : Y(d.to);
-        parts.push(`<g class="dim${editable ? ' editable' : ''}" data-dim="${d.id}"><line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/><line x1="${x - 5}" y1="${y1}" x2="${x + 5}" y2="${y1}"/><line x1="${x - 5}" y1="${y2}" x2="${x + 5}" y2="${y2}"/><text x="${x - 4}" y="${(y1 + y2) / 2 + 4}" text-anchor="end">${text}</text></g>`);
+        parts.push(`<g class="${cls}" data-dim="${d.id}"><line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/><line x1="${x - 5}" y1="${y1}" x2="${x + 5}" y2="${y1}"/><line x1="${x - 5}" y1="${y2}" x2="${x + 5}" y2="${y2}"/><text x="${x - 4}" y="${(y1 + y2) / 2 + 4}" text-anchor="end">${text}</text></g>`);
       }
     });
     host.innerHTML = `<svg class="drawing" width="${W}" height="${H}" data-view="${view}">${parts.join('')}</svg>`;
