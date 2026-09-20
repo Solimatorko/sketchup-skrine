@@ -19,7 +19,16 @@ class PresetStoreTest < Minitest::Test
       entry = S.all(user_dir: dir).find { |p| p[:file] == path }
       assert_equal 'Moja skriňa – detská', entry[:name]
       assert_equal 1500, entry[:params]['width']
-      assert_equal 1500, S.read(path)['width']
+      assert_equal 1500, S.read(path, user_dir: dir)['width']
     end
+  end
+
+  def test_read_rejects_a_file_outside_the_preset_folders
+    assert_raises(ArgumentError) { S.read('/tmp/x.json') }
+  end
+
+  def test_read_accepts_a_builtin_preset_path
+    entry = S.all(user_dir: Dir.mktmpdir).first
+    assert_equal entry[:params]['width'], S.read(entry[:file])['width']
   end
 end

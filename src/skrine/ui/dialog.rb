@@ -85,7 +85,7 @@ module Skrine
           apply(Core::PresetStore.read(file))
           push_state
         end
-      rescue JSON::ParserError, Errno::ENOENT => e
+      rescue JSON::ParserError, Errno::ENOENT, ArgumentError => e
         UI.messagebox("Preset sa nedá načítať: #{e.message}")
       end
 
