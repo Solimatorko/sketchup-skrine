@@ -34,7 +34,7 @@ module Skrine
         else
           open_editor(res[:group])
         end
-      rescue JSON::ParserError, Errno::ENOENT => e
+      rescue JSON::ParserError, Errno::ENOENT, ArgumentError => e
         UI.messagebox("Preset sa nedá načítať: #{e.message}")
       end
 
