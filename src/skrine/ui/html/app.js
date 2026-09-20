@@ -198,6 +198,24 @@ Skrine.OPTION_LABELS = {
   front: 'predná hrana', all: 'všetky hrany', wood: 'drevený', metal: 'kovový'
 };
 
+window.Skrine = Skrine;
+
+// Report JS errors back to the Ruby Console so they are not lost in the WebView.
+window.onerror = (msg, src, line) => {
+  const box = document.getElementById('messages');
+  if (box) box.appendChild(Skrine.msg('error', 'JS: ' + msg + ' (' + line + ')'));
+  if (window.sketchup && sketchup.log) sketchup.log('JS error: ' + msg + ' @' + src + ':' + line);
+};
+
+// Ask Ruby for the state until Skrine.init has run (the bridge is not always
+// ready at DOMContentLoaded on every platform).
+Skrine.requestState = function requestState(attempt) {
+  if (this.schema) return;
+  if (window.sketchup && sketchup.ready) sketchup.ready();
+  if (attempt < 20) setTimeout(() => this.requestState(attempt + 1), 250);
+  else this.setResult({ errors: ['Dialóg nedostal dáta zo SketchUpu – zatvor ho a otvor znova (Extensions › Skrine › Upraviť označenú skriňu).'] });
+};
+
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-apply').onclick = () => Skrine.apply();
   document.getElementById('chk-auto').onchange = (e) => { Skrine.auto = e.target.checked; if (Skrine.auto) Skrine.apply(); };
@@ -205,5 +223,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-load').onclick = () => sketchup.load_preset();
   document.getElementById('btn-cutlist').onclick = () => sketchup.cutlist();
   document.getElementById('btn-new').onclick = () => sketchup.new_object();
-  if (window.sketchup) sketchup.ready();
+  document.getElementById('info').textContent = 'Čakám na dáta zo SketchUpu…';
+  Skrine.requestState(0);
 });
+window.addEventListener('load', () => Skrine.requestState(0));

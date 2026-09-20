@@ -34,6 +34,9 @@ module Skrine
           push_state
         else
           dialog.show
+          # The page also polls via the 'ready' callback; this covers platforms
+          # where the bridge is up before the page asks.
+          UI.start_timer(0.5, false) { push_state }
         end
       end
 
@@ -48,6 +51,7 @@ module Skrine
                                resizable: true, style: UI::HtmlDialog::STYLE_DIALOG)
         d.set_file(HTML)
         d.add_action_callback('ready') { push_state }
+        d.add_action_callback('log') { |_, msg| puts "[Skrine] #{msg}" }
         d.add_action_callback('apply') { |_, json| apply(JSON.parse(json)) }
         d.add_action_callback('save_preset') { |_, json| Presets.save(json) }
         d.add_action_callback('load_preset') { load_preset }
