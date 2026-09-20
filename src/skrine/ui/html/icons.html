@@ -1,0 +1,5 @@
+<!DOCTYPE html><html lang="sk"><head><meta charset="utf-8"><title>Ikony</title>
+<style>body{font-family:sans-serif;display:flex;flex-wrap:wrap;gap:10px;padding:10px}div{width:110px;text-align:center;font-size:10px;border:1px solid #ddd;padding:6px}</style></head>
+<body><script src="icons.js"></script><script>
+Object.keys(ICONS).forEach((k) => { const d = document.createElement('div'); d.innerHTML = ICONS[k] + '<br>' + k; document.body.appendChild(d); });
+</script></body></html>
