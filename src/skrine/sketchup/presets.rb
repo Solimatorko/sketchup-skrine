@@ -17,7 +17,8 @@ module Skrine
       end
 
       def self.load
-        path = UI.openpanel('Načítať preset', DIR, 'JSON|*.json||')
+        FileUtils.mkdir_p(Core::PresetStore.user_dir)
+        path = UI.openpanel('Načítať preset', Core::PresetStore.user_dir, 'JSON|*.json||')
         return nil unless path
 
         JSON.parse(File.read(path))

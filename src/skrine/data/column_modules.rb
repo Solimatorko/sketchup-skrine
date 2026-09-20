@@ -35,7 +35,7 @@ module Skrine
       end
 
       def self.to_h
-        MODULES.map { |m| { key: m[:key], label: m[:label], cells: m[:cells] } }
+        MODULES.map { |m| { key: m[:key], label: m[:label], cells: Marshal.load(Marshal.dump(m[:cells])) } }
       end
     end
   end

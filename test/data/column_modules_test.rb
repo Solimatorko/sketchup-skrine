@@ -29,5 +29,8 @@ class ColumnModulesTest < Minitest::Test
     h = M.to_h
     assert_equal M::MODULES.size, h.size
     assert h.first.key?(:label)
+
+    h.first[:cells].first[:content] = :mutated
+    refute_equal :mutated, M::MODULES.first[:cells].first[:content]
   end
 end
