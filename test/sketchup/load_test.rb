@@ -23,7 +23,7 @@ class SketchupLoadTest < Minitest::Test
     assert defined?(Skrine::SU::Presets)
     assert defined?(Skrine::SU::Dialog)
     assert defined?(Skrine::SU::CutlistCommand)
-    assert defined?(Skrine::UI::PreviewService)
+    assert defined?(Skrine::Editor::PreviewService)
   end
 
   def test_commands_expose_new_from_preset
@@ -160,5 +160,108 @@ class SketchupLoadTest < Minitest::Test
     hw = cutlist.hardware_rows.find { |r| r.kind == :hinge }
     refute_nil hw
     assert_equal 2, hw.qty
+  end
+end
+
+# R1 (final-review.md C1/C2): SketchUp defines a global `::UI` module; a
+# `Skrine::UI` constant would shadow it for every unqualified `UI` inside
+# `module Skrine ... end` (menu registration, HtmlDialog, messagebox, …) and
+# break the whole plugin at load time. Plain Ruby has no `::UI`, so nothing
+# above this point would ever catch that regression. Stub just enough of
+# `::UI`/`::Sketchup` to drive `Dialog#build_dialog` and its callbacks the way
+# SketchUp would, so a reintroduced `Skrine::UI` (or an unqualified
+# `PreviewService` reference, C2) fails here instead of only inside SketchUp.
+unless defined?(::UI)
+  module ::UI
+    class HtmlDialog
+      STYLE_DIALOG = :dialog
+
+      attr_reader :callbacks
+
+      def initialize(**_opts)
+        @callbacks = {}
+        @executed = []
+        @visible = false
+      end
+
+      def set_file(_path); end
+      def set_html(_html); end
+
+      # Records name -> block so a test can invoke a callback the way the
+      # WebView bridge would.
+      def add_action_callback(name, &block)
+        @callbacks[name] = block
+      end
+
+      def execute_script(js)
+        @executed << js
+      end
+
+      attr_reader :executed
+
+      def show
+        @visible = true
+      end
+
+      def visible?
+        @visible
+      end
+
+      def close
+        @visible = false
+      end
+    end
+
+    def self.menu(_name)
+      Object.new.tap do |m|
+        def m.add_submenu(*) = self
+        def m.add_item(*) = self
+      end
+    end
+
+    def self.add_context_menu_handler(&_block); end
+    def self.messagebox(*_args); end
+    def self.start_timer(*_args); end
+    def self.openpanel(*_args); end
+    def self.savepanel(*_args); end
+  end
+end
+
+unless defined?(::Sketchup)
+  module ::Sketchup
+    def self.active_model = nil
+  end
+end
+
+class SketchupUiShapeTest < Minitest::Test
+  def test_skrine_never_defines_a_ui_constant
+    refute Skrine.const_defined?(:UI, false)
+  end
+
+  def test_build_dialog_returns_the_stub_html_dialog_with_registered_callbacks
+    dialog = Skrine::SU::Dialog.new
+    d = dialog.send(:build_dialog)
+
+    assert_kind_of ::UI::HtmlDialog, d
+    assert d.callbacks.key?('preview')
+    assert d.callbacks.key?('apply')
+    assert d.callbacks.key?('gallery')
+  end
+
+  # Exercises the real `Editor::PreviewService.preview` call through the callback
+  # (not a mock), so an unqualified `PreviewService` (C2) or a reintroduced
+  # `Skrine::UI` (C1) would raise NameError here instead of only in SketchUp.
+  def test_preview_callback_executes_a_set_preview_script
+    dialog = Skrine::SU::Dialog.new
+    dialog.instance_variable_set(:@type, Skrine::Core::Registry.fetch(:wardrobe))
+    d = dialog.send(:build_dialog)
+    # send_js resolves the dialog via the memoizing `dialog` accessor; wire it to
+    # the same stub instance the callback below is registered on.
+    dialog.instance_variable_set(:@dialog, d)
+
+    d.callbacks['preview'].call(nil, '{"width":1500}')
+
+    assert_equal 1, d.executed.size
+    assert d.executed.first.start_with?('Skrine.setPreview('), d.executed.first
   end
 end

@@ -57,11 +57,11 @@ def handle(sock)
     html = File.read(File.join(HTML_DIR, 'index.html'), encoding: 'UTF-8').sub('<script src="app.js">', "#{STUB}<script src=\"app.js\">")
     respond(sock, 200, TYPES['.html'], html)
   when ['GET', '/state']
-    json(sock, Skrine::UI::PreviewService.init_payload(TYPE, TYPE.schema.defaults))
+    json(sock, Skrine::Editor::PreviewService.init_payload(TYPE, TYPE.schema.defaults))
   when ['POST', '/preview']
-    json(sock, Skrine::UI::PreviewService.preview(TYPE, JSON.parse(body)))
+    json(sock, Skrine::Editor::PreviewService.preview(TYPE, JSON.parse(body)))
   when ['GET', '/gallery']
-    json(sock, Skrine::UI::PreviewService.gallery(TYPE))
+    json(sock, Skrine::Editor::PreviewService.gallery(TYPE))
   when ['GET', '/preset']
     file = URI.decode_www_form(uri.query.to_s).to_h['file']
     json(sock, TYPE.schema.merge_defaults(Skrine::Core::PresetStore.read(file)))

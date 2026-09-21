@@ -3,7 +3,11 @@ require_relative '../data/column_modules'
 require_relative '../core/preset_store'
 
 module Skrine
-  module UI
+  # Namespace for the editor page's pure-Ruby support code. Deliberately not
+  # named `UI` — SketchUp defines a global `::UI` module, and a `Skrine::UI`
+  # constant would shadow it for every unqualified `UI` reference inside
+  # `module Skrine ... end` (menu registration, HtmlDialog, messagebox, …).
+  module Editor
     # Builds what the editor page needs (scene, info, messages). Used by the
     # SketchUp dialog and by scripts/ui_server.rb, so it must stay SketchUp-free.
     module PreviewService

@@ -2,7 +2,7 @@ require 'test_helper'
 
 class PreviewServiceTest < Minitest::Test
   TYPE = Skrine::Core::Registry.fetch(:wardrobe)
-  PS = Skrine::UI::PreviewService
+  PS = Skrine::Editor::PreviewService
 
   def test_preview_returns_scene_for_valid_params
     pv = PS.preview(TYPE, { 'width' => 2000 })

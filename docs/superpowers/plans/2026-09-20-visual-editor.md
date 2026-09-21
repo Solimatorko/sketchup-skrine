@@ -4,7 +4,7 @@
 
 **Goal:** Nahradiť schémový formulár editorom s živým SVG nákresom (klik na prvok → panel s obrázkovými kartami), knižnicou modulov stĺpca a galériou hotových skríň.
 
-**Architecture:** Čistý Ruby `Export::Scene` prevedie `Layout` na JSON scénu (boxy s druhom/stĺpcom/poľom, klikacie polia, kóty). `UI::PreviewService` (čistý Ruby) obsluhuje `preview`/`gallery` pre dialóg aj pre dev HTTP server, takže sa UI dá vizuálne testovať v bežnom prehliadači. JS je rozdelené: `drawing.js` (SVG + interakcia), `cards.js`+`icons.js` (obrázkové voľby), `gallery.js`, `app.js` (stav, panely, rozšírený formulár, handshake).
+**Architecture:** Čistý Ruby `Export::Scene` prevedie `Layout` na JSON scénu (boxy s druhom/stĺpcom/poľom, klikacie polia, kóty). `Editor::PreviewService` (čistý Ruby) obsluhuje `preview`/`gallery` pre dialóg aj pre dev HTTP server, takže sa UI dá vizuálne testovať v bežnom prehliadači. JS je rozdelené: `drawing.js` (SVG + interakcia), `cards.js`+`icons.js` (obrázkové voľby), `gallery.js`, `app.js` (stav, panely, rozšírený formulár, handshake).
 
 **Tech Stack:** Ruby 3.2 (SketchUp) / testy Homebrew Ruby, minitest; vanilla JS/CSS v `UI::HtmlDialog`; dev server na `socket` stdlib.
 
@@ -514,7 +514,7 @@ end
 
 ---
 
-### Task 4: `UI::PreviewService`, callbacky dialógu, dev server
+### Task 4: `Editor::PreviewService`, callbacky dialógu, dev server
 
 **Files:**
 - Create: `src/skrine/ui/preview_service.rb`, `scripts/ui_server.rb`
@@ -522,7 +522,7 @@ end
 - Test: `test/ui/preview_service_test.rb`, `test/sketchup/load_test.rb` (require preview_service; dialog stále načíta)
 
 **Interfaces:**
-- `Skrine::UI::PreviewService.preview(type, values) -> { scene:, info:, errors:, warnings:, state: }` (`scene` nil pri chybách), `.init_payload(type, params, result = {}) -> { type, label, schema, state, result, modules, preview }`, `.gallery(type, presets = PresetStore.all) -> [{ file:, name:, scene: }]`.
+- `Skrine::Editor::PreviewService.preview(type, values) -> { scene:, info:, errors:, warnings:, state: }` (`scene` nil pri chybách), `.init_payload(type, params, result = {}) -> { type, label, schema, state, result, modules, preview }`, `.gallery(type, presets = PresetStore.all) -> [{ file:, name:, scene: }]`.
 - Dialóg → JS: `Skrine.init(payload)`, `Skrine.setPreview(previewHash)`, `Skrine.setResult(result)`, `Skrine.showGallery(list)`. JS → Ruby callbacky: `ready`, `preview(json)`, `apply(json)`, `gallery()`, `use_preset(file, mode)` (`mode` = `'apply' | 'new'`), `save_named_preset(json, name)`, `save_preset(json)`, `load_preset()`, `cutlist()`, `new_object()`, `log(msg)`.
 - Dev server: `/opt/homebrew/opt/ruby/bin/ruby scripts/ui_server.rb` → `http://localhost:8792/` (stub `window.sketchup` volá HTTP).
 
@@ -534,7 +534,7 @@ require 'test_helper'
 
 class PreviewServiceTest < Minitest::Test
   TYPE = Skrine::Core::Registry.fetch(:wardrobe)
-  PS = Skrine::UI::PreviewService
+  PS = Skrine::Editor::PreviewService
 
   def test_preview_returns_scene_for_valid_params
     pv = PS.preview(TYPE, { 'width' => 2000 })
@@ -577,7 +577,7 @@ require_relative '../data/column_modules'
 require_relative '../core/preset_store'
 
 module Skrine
-  module UI
+  module Editor
     # Builds what the editor page needs (scene, info, messages). Used by the
     # SketchUp dialog and by scripts/ui_server.rb, so it must stay SketchUp-free.
     module PreviewService
@@ -718,11 +718,11 @@ def handle(sock)
     html = File.read(File.join(HTML_DIR, 'index.html')).sub('<script src="app.js">', "#{STUB}<script src=\"app.js\">")
     respond(sock, 200, TYPES['.html'], html)
   when ['GET', '/state']
-    json(sock, Skrine::UI::PreviewService.init_payload(TYPE, TYPE.schema.defaults))
+    json(sock, Skrine::Editor::PreviewService.init_payload(TYPE, TYPE.schema.defaults))
   when ['POST', '/preview']
-    json(sock, Skrine::UI::PreviewService.preview(TYPE, JSON.parse(body)))
+    json(sock, Skrine::Editor::PreviewService.preview(TYPE, JSON.parse(body)))
   when ['GET', '/gallery']
-    json(sock, Skrine::UI::PreviewService.gallery(TYPE))
+    json(sock, Skrine::Editor::PreviewService.gallery(TYPE))
   when ['GET', '/preset']
     file = URI.decode_www_form(uri.query.to_s).to_h['file']
     json(sock, TYPE.schema.merge_defaults(Skrine::Core::PresetStore.read(file)))
@@ -745,7 +745,7 @@ puts "Skrine UI dev server: http://localhost:#{PORT}/"
 loop { Thread.new(server.accept) { |s| handle(s) } }
 ```
 
-`test/sketchup/load_test.rb`: pridaj `require 'skrine/ui/preview_service'` (už ide cez core) a assert `defined?(Skrine::UI::PreviewService)`.
+`test/sketchup/load_test.rb`: pridaj `require 'skrine/ui/preview_service'` (už ide cez core) a assert `defined?(Skrine::Editor::PreviewService)`.
 
 - [ ] **Step 4: Testy** – PASS; `ruby -wc src/skrine/ui/dialog.rb scripts/ui_server.rb`; spusti server a `curl -s localhost:8792/state | head -c 200` vráti JSON.
 - [ ] **Step 5: Commit** `feat(ui): preview service, dialog callbacks for the visual editor, dev server`

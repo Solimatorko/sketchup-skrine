@@ -53,9 +53,9 @@ module Skrine
         d.set_file(HTML)
         d.add_action_callback('ready') { push_state }
         d.add_action_callback('log') { |_, msg| puts "[Skrine] #{msg}" }
-        d.add_action_callback('preview') { |_, json| send_js('Skrine.setPreview', PreviewService.preview(@type, JSON.parse(json))) }
+        d.add_action_callback('preview') { |_, json| send_js('Skrine.setPreview', Editor::PreviewService.preview(@type, JSON.parse(json))) }
         d.add_action_callback('apply') { |_, json| apply(JSON.parse(json)) }
-        d.add_action_callback('gallery') { send_js('Skrine.showGallery', PreviewService.gallery(@type)) }
+        d.add_action_callback('gallery') { send_js('Skrine.showGallery', Editor::PreviewService.gallery(@type)) }
         d.add_action_callback('use_preset') { |_, file, mode| use_preset(file, mode) }
         d.add_action_callback('save_named_preset') do |_, json, name|
           path = Core::PresetStore.save_named(JSON.parse(json), name)
@@ -75,7 +75,7 @@ module Skrine
       def push_state
         return unless @params
 
-        send_js('Skrine.init', PreviewService.init_payload(@type, @params, @last || {}))
+        send_js('Skrine.init', Editor::PreviewService.init_payload(@type, @params, @last || {}))
       end
 
       def use_preset(file, mode)
