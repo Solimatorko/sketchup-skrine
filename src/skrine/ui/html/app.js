@@ -399,10 +399,13 @@ window.addEventListener('DOMContentLoaded', () => {
   $('btn-new').onclick = () => sketchup.new_object();
   $('btn-gallery').onclick = () => sketchup.gallery();
   $('gallery-close').onclick = () => Gallery.hide();
-  $('btn-presets').onclick = () => $('presets-menu').classList.toggle('hidden');
+  $('btn-presets').onclick = (e) => { e.stopPropagation(); $('presets-menu').classList.toggle('hidden'); };
   $('btn-save-named').onclick = () => { $('presets-menu').classList.add('hidden'); const name = window.prompt('Názov presetu:'); if (name) sketchup.save_named_preset(JSON.stringify(Skrine.state), name); };
   $('btn-save-file').onclick = () => { $('presets-menu').classList.add('hidden'); sketchup.save_preset(JSON.stringify(Skrine.state)); };
   $('btn-load-file').onclick = () => { $('presets-menu').classList.add('hidden'); sketchup.load_preset(); };
+  document.addEventListener('click', (e) => {
+    if (!$('presets-menu').classList.contains('hidden') && !e.target.closest('.menu')) $('presets-menu').classList.add('hidden');
+  });
   $('adv-toggle').onclick = () => { const b = $('adv-body'); b.classList.toggle('hidden'); $('adv-toggle').textContent = (b.classList.contains('hidden') ? '▸' : '▾') + ' Rozšírené nastavenia'; if (!b.classList.contains('hidden')) Skrine.renderAdvanced(); };
   window.addEventListener('resize', () => Skrine.drawScene());
   $('info').textContent = 'Čakám na dáta zo SketchUpu…';
