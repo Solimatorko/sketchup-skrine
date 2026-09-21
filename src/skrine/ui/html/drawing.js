@@ -66,19 +66,27 @@ const Drawing = {
       const px = X(x0); const py = ay === 'z' ? Y(y0 + dy) : Y(y0);
       return `x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="${(dx * scale).toFixed(1)}" height="${(dy * scale).toFixed(1)}"`;
     };
+    const renderBox = (b) => {
+      const cls = ['box', b.kind, this.isSelected(b, opts.selection) ? 'selected' : '', opts.hover === b.id ? 'hover' : ''].join(' ');
+      parts.push(`<rect class="${cls}" ${geom(b)} data-id="${b.id}" fill="${this.COLORS[b.kind] || '#999'}"><title>${b.name} ${this.fmt(b.dx)}×${this.fmt(b.dz)}×${this.fmt(b.dy)}</title></rect>`);
+    };
+    const sortedBoxes = scene.boxes.filter((b) => !hide.includes(b.kind)).sort((a, b) => depthKey(a) - depthKey(b));
+    // I1: the invisible cell hit-areas must win over the back panel, which otherwise
+    // covers the whole interior and swallows clicks meant for an empty cell. Paint
+    // order: back panel(s) first (furthest away in every view anyway) -> cell hit
+    // rects (transparent, but still "painted" so they take the click) -> every other
+    // box on top, so shelves/fronts/etc. stay clickable over their cell.
+    sortedBoxes.filter((b) => b.kind === 'back').forEach(renderBox);
     if (opts.interactive !== false) {
       scene.cells.forEach((c) => {
         const b = { x: c.x, y: 0, z: c.z, dx: c.w, dy: size.y, dz: c.h };
         const sel = opts.selection && opts.selection.kind === 'cell' && opts.selection.column === c.column && opts.selection.cell === c.cell;
-        parts.push(`<rect class="cell${sel ? ' selected' : ''}" ${geom(b)} data-target="cell" data-column="${c.column}" data-cell="${c.cell}"/>`);
+        parts.push(`<rect class="cell${sel ? ' selected' : ''}" ${geom(b)} fill="transparent" pointer-events="fill" data-target="cell" data-column="${c.column}" data-cell="${c.cell}"/>`);
       });
     }
-    scene.boxes.filter((b) => !hide.includes(b.kind)).sort((a, b) => depthKey(a) - depthKey(b)).forEach((b) => {
-      const cls = ['box', b.kind, this.isSelected(b, opts.selection) ? 'selected' : '', opts.hover === b.id ? 'hover' : ''].join(' ');
-      parts.push(`<rect class="${cls}" ${geom(b)} data-id="${b.id}" fill="${this.COLORS[b.kind] || '#999'}"><title>${b.name} ${this.fmt(b.dx)}×${this.fmt(b.dz)}×${this.fmt(b.dy)}</title></rect>`);
-    });
-    // dimension lines
-    const dims = this.dimsFor(scene, view);
+    sortedBoxes.filter((b) => b.kind !== 'back').forEach(renderBox);
+    // dimension lines (M7: thumbnails draw the boxes only, no dimension clutter)
+    const dims = opts.interactive === false ? [] : this.dimsFor(scene, view);
     dims.forEach((d) => {
       const text = this.fmt(d.value);
       const editable = d.edit && opts.interactive !== false;

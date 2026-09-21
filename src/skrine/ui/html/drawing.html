@@ -7,10 +7,22 @@ fetch('/state').then(r => r.json()).then(p => {
   const cb = { onSelect: (t) => { log.textContent = JSON.stringify(t) + '\n' + log.textContent; },
     onHover: (b) => { if (b) log.textContent = 'hover ' + b.name + '\n' + log.textContent.split('\n').slice(0, 8).join('\n'); },
     onEditDim: (d) => { log.textContent = 'edit ' + d.id + ' ' + d.edit + '\n' + log.textContent; } };
+  const hosts = {};
   ['front', 'front_open', 'side', 'plan'].forEach((view) => {
     const host = document.createElement('div'); host.className = 'host'; document.getElementById('views').appendChild(host);
     Drawing.render(host, scene, Object.assign({ view, selection: { kind: 'column', column: 1 } }, cb));
+    hosts[view] = host;
   });
+  // I1 regression check: an empty cell's invisible hit-rect must be painted AFTER
+  // the back panel (which otherwise covers the whole interior and would swallow
+  // the click first, per SVG paint order = hit-test order). Check DOM order
+  // directly, rather than pixel coordinates, so it doesn't depend on scroll/layout.
+  const svg = hosts.front_open.querySelector('svg');
+  const children = Array.from(svg.children);
+  const backIndexes = children.map((el, i) => (el.classList.contains('back') ? i : -1)).filter((i) => i >= 0);
+  const cellIndex = children.findIndex((el) => el.dataset.column === '1' && el.dataset.cell === '1');
+  const ok = cellIndex >= 0 && backIndexes.every((bi) => bi < cellIndex);
+  log.textContent = `I1 check: back box index(es) ${JSON.stringify(backIndexes)} < cell 1/1 index ${cellIndex} -> ${ok ? 'OK' : 'FAIL'}\n` + log.textContent;
   // Regression hosts: dimension labels must stay fully on-screen at both a large (1400x900)
   // and a small (700x500) host size, regardless of the resulting drawing scale.
   const big = document.createElement('div'); big.className = 'host big'; document.getElementById('sizes').appendChild(big);
