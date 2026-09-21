@@ -4,6 +4,10 @@
 require 'socket'
 require 'json'
 require 'uri'
+
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
 $LOAD_PATH.unshift File.expand_path('../src', __dir__)
 require 'skrine/core'
 
@@ -50,7 +54,7 @@ def handle(sock)
   uri = URI.parse(target)
   case [method, uri.path]
   when ['GET', '/'], ['GET', '/index.html']
-    html = File.read(File.join(HTML_DIR, 'index.html')).sub('<script src="app.js">', "#{STUB}<script src=\"app.js\">")
+    html = File.read(File.join(HTML_DIR, 'index.html'), encoding: 'UTF-8').sub('<script src="app.js">', "#{STUB}<script src=\"app.js\">")
     respond(sock, 200, TYPES['.html'], html)
   when ['GET', '/state']
     json(sock, Skrine::UI::PreviewService.init_payload(TYPE, TYPE.schema.defaults))
