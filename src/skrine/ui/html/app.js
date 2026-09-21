@@ -260,6 +260,7 @@ const Skrine = {
     body.append(el('h2', {}, 'Skriňa'));
     body.append(this.h3('Osadenie'));
     body.append(this.cards(st, 'placement', ['placement'], 'placement', { after: () => { this.applyPlacement(); this.renderPanel(); } }));
+    body.append(this.toggle(st, 'depth_includes_fronts', 'Hĺbka vrátane čiel'));
     body.append(this.h3('Dvere'));
     body.append(this.toggle(st, 'doors_enabled', 'Dvere (vypnuté = otvorený korpus)', { after: () => this.renderPanel() }));
     if (st.doors_enabled) {
