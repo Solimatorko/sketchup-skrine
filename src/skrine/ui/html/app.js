@@ -27,11 +27,24 @@ const Skrine = {
   schema: null, state: null, modules: [], scene: null, info: {}, errors: [], warnings: [],
   selection: { kind: 'global' }, view: 'front', auto: true, advancedTab: 'construction', previewTimer: null, applyTimer: null,
   pendingDimEdit: null, dimError: null, dimErrorTimer: null,
+  // Monotonic counter tagging every preview/apply request; lastPreviewSeq/lastApplySeq
+  // let setPreview/setResult ignore a response that arrives after a newer one already
+  // landed (I2: Ruby is stateless, so responses can arrive out of order).
+  seq: 0, lastPreviewSeq: 0, lastApplySeq: 0, redrawPending: false,
 
   init(payload) {
     this.schema = payload.schema;
     this.state = payload.state;
     this.modules = payload.modules || [];
+    // Fresh state (initial load, gallery apply, preset load): drop any selection/edit
+    // that pointed into the previous state and any in-flight timers/sequence tracking.
+    this.selection = { kind: 'global' };
+    this.pendingDimEdit = null;
+    this.dimError = null;
+    clearTimeout(this.dimErrorTimer);
+    clearTimeout(this.previewTimer);
+    clearTimeout(this.applyTimer);
+    this.seq = 0; this.lastPreviewSeq = 0; this.lastApplySeq = 0;
     Form.LABELS = OPTION_LABELS;
     document.getElementById('title').textContent = payload.label;
     this.render();
@@ -41,17 +54,23 @@ const Skrine = {
 
   // ---------- bridge ----------
   changed() {
+    this.seq += 1;
+    const seq = this.seq;
     clearTimeout(this.previewTimer);
-    this.previewTimer = setTimeout(() => sketchup.preview(JSON.stringify(this.state)), 150);
-    if (this.auto) { clearTimeout(this.applyTimer); this.applyTimer = setTimeout(() => this.apply(), 600); }
+    this.previewTimer = setTimeout(() => sketchup.preview(JSON.stringify(this.state), seq), 150);
+    if (this.auto) { clearTimeout(this.applyTimer); this.applyTimer = setTimeout(() => this.apply(seq), 600); }
   },
-  apply() { sketchup.apply(JSON.stringify(this.state)); },
+  apply(seq = this.seq) { sketchup.apply(JSON.stringify(this.state), seq); },
   setPreview(pv) {
+    // Stale response (a newer preview/apply already changed the state) — ignore entirely.
+    if (pv.seq != null && pv.seq < this.lastPreviewSeq) return;
+    if (pv.seq != null) this.lastPreviewSeq = pv.seq;
     this.errors = pv.errors || []; this.warnings = pv.warnings || []; this.info = pv.info || {};
     if (pv.scene) this.scene = pv.scene;
     // A dimension edit is tentatively applied to state before we know whether it is valid.
-    // Clear the pending marker on any preview result; if it produced errors, undo it.
-    if (this.pendingDimEdit) {
+    // Only resolve it once the preview that actually reflects that edit (or a later one)
+    // comes back; a response for an older, since-superseded change must not touch it.
+    if (this.pendingDimEdit && (pv.seq == null || pv.seq >= this.pendingDimEdit.seq)) {
       const pending = this.pendingDimEdit;
       this.pendingDimEdit = null;
       if (this.errors.length) {
@@ -64,13 +83,21 @@ const Skrine = {
     this.drawScene(); this.renderMessages(); this.renderInfo();
   },
   setResult(r) {
-    if (r.errors && r.errors.length) this.errors = r.errors;
-    if (r.warnings && r.warnings.length) this.warnings = r.warnings;
+    if (r.seq != null && r.seq < this.lastApplySeq) return;
+    if (r.seq != null) this.lastApplySeq = r.seq;
+    // Replace, not merge: a clean apply must clear errors/warnings left over from an
+    // earlier failed one (M3), now that seq tells us this result is current.
+    this.errors = r.errors || []; this.warnings = r.warnings || [];
     if (r.info && r.info.inner_w != null) this.info = r.info;
     this.renderMessages(); this.renderInfo();
   },
-  loadParams(params) { this.state = params; this.selection = { kind: 'global' }; this.render(); this.changed(); },
   showGallery(list) { Gallery.show(list, { onApply: (f) => sketchup.use_preset(f, 'apply'), onNew: (f) => sketchup.use_preset(f, 'new') }); },
+  presetSaved(payload) {
+    const box = document.getElementById('messages');
+    const d = this.msg('info', 'Preset uložený do galérie: ' + payload.path);
+    box.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  },
 
   // ---------- schema helpers ----------
   param(path) {
@@ -99,6 +126,10 @@ const Skrine = {
   drawScene() {
     const host = document.getElementById('drawing');
     if (!this.scene) return;
+    // Rebuilding the SVG (host.innerHTML) would remove a mid-edit .dim-input, which
+    // fires blur -> commit() with a possibly half-typed value (M14). Defer the redraw
+    // until editDim's commit/Escape handler clears the flag.
+    if (host.querySelector('.dim-input')) { this.redrawPending = true; return; }
     Drawing.render(host, this.scene, {
       view: this.view, selection: this.selection, errorDim: this.dimError,
       onSelect: (t) => this.select(t),
@@ -122,17 +153,25 @@ const Skrine = {
     // removes it, then the browser still delivers the pending blur) — guard so the
     // second call doesn't try to re-remove an already-detached node.
     let done = false;
+    // A redraw deferred by drawScene() (M14) while this input was connected must run
+    // once the input is gone, whether the edit was committed or cancelled.
+    const flushPendingRedraw = () => { if (this.redrawPending) { this.redrawPending = false; this.drawScene(); } };
     const commit = () => {
       if (done) return; done = true;
       const v = parseFloat(input.value);
       if (input.isConnected) input.remove();
-      if (Number.isNaN(v) || v <= 0) return;
+      if (Number.isNaN(v) || v <= 0) { flushPendingRedraw(); return; }
       // Remember the pre-edit value/mode so a failed preview can be undone.
       const { obj, last, modeKey } = this.resolvePath(dim.edit);
       this.pendingDimEdit = { path: dim.edit, dimId: dim.id, modeKey, prevValue: obj[last], prevMode: modeKey ? obj[modeKey] : null };
       this.setPath(dim.edit, v);
+      // setPath -> changed() just incremented this.seq for this edit; tie the pending
+      // marker to it so setPreview only resolves it once the matching (or a newer)
+      // preview result arrives (I2).
+      this.pendingDimEdit.seq = this.seq;
+      flushPendingRedraw();
     };
-    input.onkeydown = (e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { done = true; input.remove(); } };
+    input.onkeydown = (e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { done = true; input.remove(); flushPendingRedraw(); } };
     input.onblur = commit;
     host.appendChild(input); input.focus(); input.select();
   },

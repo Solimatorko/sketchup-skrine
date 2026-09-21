@@ -22,8 +22,8 @@ STUB = <<~JS
   window.sketchup = {
     _call(path, body, then_) { fetch(path, body ? { method: 'POST', body } : {}).then(r => r.json()).then(then_); },
     ready() { this._call('/state', null, p => Skrine.init(p)); },
-    preview(json) { this._call('/preview', json, r => Skrine.setPreview(r)); },
-    apply(json) { this._call('/preview', json, r => Skrine.setResult({ errors: r.errors, warnings: r.warnings, info: r.info })); },
+    preview(json, seq) { this._call('/preview?seq=' + seq, json, r => Skrine.setPreview(r)); },
+    apply(json, seq) { this._call('/preview?seq=' + seq, json, r => Skrine.setResult({ errors: r.errors, warnings: r.warnings, info: r.info, seq: r.seq })); },
     gallery() { this._call('/gallery', null, g => Skrine.showGallery(g)); },
     use_preset(file, mode) { this._call('/preset?file=' + encodeURIComponent(file), null, p => Skrine.loadParams(p)); },
     save_named_preset(json, name) { console.log('save_named_preset', name); alert('Uložené (stub): ' + name); },
@@ -59,7 +59,10 @@ def handle(sock)
   when ['GET', '/state']
     json(sock, Skrine::Editor::PreviewService.init_payload(TYPE, TYPE.schema.defaults))
   when ['POST', '/preview']
-    json(sock, Skrine::Editor::PreviewService.preview(TYPE, JSON.parse(body)))
+    seq = URI.decode_www_form(uri.query.to_s).to_h['seq']
+    result = Skrine::Editor::PreviewService.preview(TYPE, JSON.parse(body))
+    result = result.merge(seq: seq.to_i) if seq
+    json(sock, result)
   when ['GET', '/gallery']
     json(sock, Skrine::Editor::PreviewService.gallery(TYPE))
   when ['GET', '/preset']

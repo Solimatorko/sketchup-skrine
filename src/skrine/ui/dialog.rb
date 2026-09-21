@@ -53,8 +53,12 @@ module Skrine
         d.set_file(HTML)
         d.add_action_callback('ready') { push_state }
         d.add_action_callback('log') { |_, msg| puts "[Skrine] #{msg}" }
-        d.add_action_callback('preview') { |_, json| send_js('Skrine.setPreview', Editor::PreviewService.preview(@type, JSON.parse(json))) }
-        d.add_action_callback('apply') { |_, json| apply(JSON.parse(json)) }
+        d.add_action_callback('preview') do |_, json, seq|
+          send_js('Skrine.setPreview', Editor::PreviewService.preview(@type, JSON.parse(json)).merge(seq: seq.to_i))
+        rescue StandardError => e
+          send_js('Skrine.setPreview', { errors: ["Chyba náhľadu: #{e.message}"], warnings: [], info: {}, seq: seq.to_i })
+        end
+        d.add_action_callback('apply') { |_, json, seq| apply(JSON.parse(json), seq) }
         d.add_action_callback('gallery') { send_js('Skrine.showGallery', Editor::PreviewService.gallery(@type)) }
         d.add_action_callback('use_preset') { |_, file, mode| use_preset(file, mode) }
         d.add_action_callback('save_named_preset') do |_, json, name|
@@ -89,13 +93,14 @@ module Skrine
         UI.messagebox("Preset sa nedá načítať: #{e.message}")
       end
 
-      def apply(values)
+      def apply(values, seq = nil)
         @params = @type.schema.merge_defaults(values)
         @last = if @group.nil? || @group.deleted?
                   { errors: ['Skriňa v modeli už neexistuje – vytvor novú (tlačidlo Nová skriňa).'], warnings: [], info: {} }
                 else
                   Builder.rebuild(@group, @params)
                 end
+        @last = @last.merge(seq: seq.to_i) if seq
         dialog.execute_script("Skrine.setResult(#{self.class.js_json(@last)})")
       end
 
