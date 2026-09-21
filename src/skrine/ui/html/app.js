@@ -229,6 +229,7 @@ const Skrine = {
       body.append(this.cards(st.doors, 'mount', ['doors', 'mount'], 'mount', { small: true }));
       body.append(this.h3('Zobrazenie dverí'));
       body.append(this.cards(st, 'door_display', ['door_display'], null, { small: true }));
+      body.append(el('span', { class: 'hint' }, 'Otvorenie sa zobrazí len v modeli (nákres v editore ho neukazuje).'));
       if (st.door_display === 'open') body.append(this.num(st, 'open_angle', 'Uhol otvorenia', { unit: '°' }));
       const details = el('details');
       details.append(el('summary', {}, 'Ďalšie'));
