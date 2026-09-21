@@ -1,3 +1,4 @@
+require_relative 'diag'
 require_relative 'builder'
 require_relative 'selection'
 require_relative 'presets'
@@ -9,6 +10,7 @@ module Skrine
       module_function
 
       def new_object(type_key = :wardrobe)
+        Diag.log("new_object #{type_key}")
         model = Sketchup.active_model
         type = Core::Registry.fetch(type_key)
         res = Builder.create(model, type.key, type.schema.defaults)
@@ -18,6 +20,9 @@ module Skrine
           place_next_to_existing(model, res[:group])
           open_editor(res[:group])
         end
+      rescue StandardError => e
+        Diag.log_exception('new_object', e)
+        UI.messagebox("Nová skriňa zlyhala: #{e.class}: #{e.message}")
       end
 
       # Loads a preset JSON file and creates a wardrobe from it directly
@@ -51,7 +56,12 @@ module Skrine
       # Skrine::SU::Dialog is required by loader.rb after this file, so it is
       # only resolved when this method actually runs (not when this file loads).
       def open_editor(group)
+        Diag.log("open_editor for #{group.inspect}")
         Dialog.instance.open_for(group)
+        Diag.log('open_editor: show requested')
+      rescue StandardError => e
+        Diag.log_exception('open_editor', e)
+        UI.messagebox("Editor sa nepodarilo otvoriť: #{e.class}: #{e.message}")
       end
 
       GAP_MM = 300
