@@ -5,11 +5,24 @@ class PresetStoreTest < Minitest::Test
   S = Skrine::Core::PresetStore
 
   def test_builtin_presets_listed_with_names
-    all = S.all(user_dir: Dir.mktmpdir)
-    names = all.map { |p| p[:name] }
-    assert_includes names, 'Satnik 2 stlpce'
-    assert all.all? { |p| p[:params].is_a?(Hash) }
-    refute all.first[:params].key?('_name')
+    Dir.mktmpdir do |dir|
+      all = S.all(user_dir: dir)
+      names = all.map { |p| p[:name] }
+      assert_includes names, 'Satnik 2 stlpce'
+      assert all.all? { |p| p[:params].is_a?(Hash) }
+      refute all.first[:params].key?('_name')
+    end
+  end
+
+  # I4: PresetStore.slug of a name with no ASCII letters/digits (e.g. "—") is "";
+  # writing to "<user_dir>/.json" would be wrong, so save_named must reject it
+  # instead of silently clobbering a stray file. The dialog rescues this into a
+  # messagebox instead of a window.prompt (HtmlDialog/CEF does not implement it).
+  def test_save_named_rejects_a_name_that_slugifies_to_empty
+    Dir.mktmpdir do |dir|
+      assert_raises(ArgumentError) { S.save_named({ 'width' => 1500 }, '—', user_dir: dir) }
+      assert_empty Dir[File.join(dir, '*.json')]
+    end
   end
 
   def test_save_named_writes_slug_file_and_lists_it
@@ -28,8 +41,10 @@ class PresetStoreTest < Minitest::Test
   end
 
   def test_read_accepts_a_builtin_preset_path
-    entry = S.all(user_dir: Dir.mktmpdir).first
-    assert_equal entry[:params]['width'], S.read(entry[:file])['width']
+    Dir.mktmpdir do |dir|
+      entry = S.all(user_dir: dir).first
+      assert_equal entry[:params]['width'], S.read(entry[:file])['width']
+    end
   end
 
   def test_allowed_resolves_a_preset_reached_through_a_symlinked_folder

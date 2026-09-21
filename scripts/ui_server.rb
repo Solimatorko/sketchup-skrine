@@ -25,8 +25,10 @@ STUB = <<~JS
     preview(json, seq) { this._call('/preview?seq=' + seq, json, r => Skrine.setPreview(r)); },
     apply(json, seq) { this._call('/preview?seq=' + seq, json, r => Skrine.setResult({ errors: r.errors, warnings: r.warnings, info: r.info, seq: r.seq })); },
     gallery() { this._call('/gallery', null, g => Skrine.showGallery(g)); },
-    use_preset(file, mode) { this._call('/preset?file=' + encodeURIComponent(file), null, p => Skrine.loadParams(p)); },
-    save_named_preset(json, name) { console.log('save_named_preset', name); alert('Uložené (stub): ' + name); },
+    // Mimics the real dialog's use_preset('apply'): fetch an init payload for the preset
+    // and hand it to Skrine.init (dialog.rb sets @params + push_state for 'apply').
+    use_preset(file, mode) { this._call('/preset?file=' + encodeURIComponent(file), null, p => Skrine.init(p)); },
+    save_named_preset(json, name) { this._call('/save_preset?name=' + encodeURIComponent(name), json, p => Skrine.presetSaved(p)); },
     save_preset() { alert('save_preset (stub)'); }, load_preset() { alert('load_preset (stub)'); },
     cutlist() { alert('cutlist (stub)'); }, new_object() { alert('new_object (stub)'); }, log(m) { console.log(m); }
   };
@@ -67,7 +69,12 @@ def handle(sock)
     json(sock, Skrine::Editor::PreviewService.gallery(TYPE))
   when ['GET', '/preset']
     file = URI.decode_www_form(uri.query.to_s).to_h['file']
-    json(sock, TYPE.schema.merge_defaults(Skrine::Core::PresetStore.read(file)))
+    merged = TYPE.schema.merge_defaults(Skrine::Core::PresetStore.read(file))
+    json(sock, Skrine::Editor::PreviewService.init_payload(TYPE, merged))
+  when ['POST', '/save_preset']
+    name = URI.decode_www_form(uri.query.to_s).to_h['name']
+    path = Skrine::Core::PresetStore.save_named(JSON.parse(body), name)
+    json(sock, { path: path })
   else
     path = File.join(HTML_DIR, File.basename(uri.path))
     if File.file?(path)

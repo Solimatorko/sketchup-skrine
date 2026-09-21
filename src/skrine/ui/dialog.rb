@@ -63,7 +63,9 @@ module Skrine
         d.add_action_callback('use_preset') { |_, file, mode| use_preset(file, mode) }
         d.add_action_callback('save_named_preset') do |_, json, name|
           path = Core::PresetStore.save_named(JSON.parse(json), name)
-          UI.messagebox("Preset uložený do galérie:\n#{path}")
+          send_js('Skrine.presetSaved', { path: path })
+        rescue ArgumentError => e
+          UI.messagebox(e.message)
         end
         d.add_action_callback('save_preset') { |_, json| Presets.save(json) }
         d.add_action_callback('load_preset') { load_preset }
@@ -82,11 +84,16 @@ module Skrine
         send_js('Skrine.init', Editor::PreviewService.init_payload(@type, @params, @last || {}))
       end
 
+      # 'apply' mode replaces state and preview only (spec §6) – it does not rebuild
+      # the model immediately (I5). The page previews the new params and, with Auto
+      # on (or via the Použiť button), applies them itself, so "Auto off" stays
+      # trustworthy and a gallery click never triggers a surprise rebuild.
       def use_preset(file, mode)
         if mode == 'new'
           Commands.new_from_preset_file(file)
         else
-          apply(Core::PresetStore.read(file))
+          @params = @type.schema.merge_defaults(Core::PresetStore.read(file))
+          @last = nil
           push_state
         end
       rescue JSON::ParserError, Errno::ENOENT, ArgumentError => e

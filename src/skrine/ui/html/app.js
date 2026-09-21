@@ -439,7 +439,17 @@ window.addEventListener('DOMContentLoaded', () => {
   $('btn-gallery').onclick = () => sketchup.gallery();
   $('gallery-close').onclick = () => Gallery.hide();
   $('btn-presets').onclick = (e) => { e.stopPropagation(); $('presets-menu').classList.toggle('hidden'); };
-  $('btn-save-named').onclick = () => { $('presets-menu').classList.add('hidden'); const name = window.prompt('Názov presetu:'); if (name) sketchup.save_named_preset(JSON.stringify(Skrine.state), name); };
+  // UI::HtmlDialog (CEF) does not implement window.prompt() – it silently returns
+  // null – so saving a named preset needs its own inline field instead (I4).
+  $('save-named-form').onsubmit = (e) => {
+    e.preventDefault();
+    const input = $('preset-name');
+    const name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    sketchup.save_named_preset(JSON.stringify(Skrine.state), name);
+    input.value = '';
+    $('presets-menu').classList.add('hidden');
+  };
   $('btn-save-file').onclick = () => { $('presets-menu').classList.add('hidden'); sketchup.save_preset(JSON.stringify(Skrine.state)); };
   $('btn-load-file').onclick = () => { $('presets-menu').classList.add('hidden'); sketchup.load_preset(); };
   document.addEventListener('click', (e) => {

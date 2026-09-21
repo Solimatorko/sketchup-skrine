@@ -14,7 +14,10 @@
         <div class="menu">
           <button id="btn-presets" type="button">Presety ▾</button>
           <div class="menu-items hidden" id="presets-menu">
-            <button id="btn-save-named" type="button">Uložiť do galérie…</button>
+            <form id="save-named-form" class="save-named-form">
+              <input type="text" id="preset-name" placeholder="Názov presetu">
+              <button id="btn-save-named" type="submit">Uložiť</button>
+            </form>
             <button id="btn-save-file" type="button">Uložiť do súboru…</button>
             <button id="btn-load-file" type="button">Načítať zo súboru…</button>
           </div>

@@ -54,8 +54,11 @@ module Skrine
       end
 
       def self.save_named(params, name, user_dir: self.user_dir)
+        s = slug(name)
+        raise ArgumentError, 'Názov presetu musí obsahovať aspoň jedno písmeno alebo číslicu.' if s.empty?
+
         FileUtils.mkdir_p(user_dir)
-        path = File.join(user_dir, "#{slug(name)}.json")
+        path = File.join(user_dir, "#{s}.json")
         data = { NAME_KEY => name }.merge(stringify(params))
         File.write(path, JSON.pretty_generate(data))
         path

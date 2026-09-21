@@ -121,10 +121,13 @@ Náhľad karty = mini nákres stĺpca (JS vykreslí z definície modulu schemati
 Tlačidlo **Galéria skríň** otvorí overlay s kartami: každá karta = preset z `presets/`
 (a používateľské v `~/Library/Application Support/Skrine/presets/`) s náhľadom
 (čelný pohľad zo scény) a názvom (`_name` v JSON, inak názov súboru). Ruby callback
-`gallery()` vráti `[ { file, name, scene } ]`. Klik: „Použiť na túto skriňu“ (nahradí
-state a preview) alebo „Vytvoriť novú“ (`Commands.new_from_preset_file`).
-Používateľ si uloží aktuálnu skriňu ako preset (Presety ▾ › Uložiť) – uloží sa do
-používateľského priečinka a objaví sa v galérii.
+`gallery()` vráti `[ { file, name, scene } ]`. Klik: „Použiť na túto skriňu“ –
+nahradí stav a náhľad (`@params` + `push_state`, **bez** okamžitého prekreslenia
+modelu); model sa prekreslí, keď to urobí Auto alebo tlačidlo Použiť, presne ako
+pri ručnej zmene. Alebo „Vytvoriť novú“ (`Commands.new_from_preset_file`).
+Používateľ si uloží aktuálnu skriňu ako preset (Presety ▾ › Uložiť do galérie,
+vyplní meno v riadku v menu) – uloží sa do používateľského priečinka a objaví sa
+v galérii.
 
 ## 7. Rozšírené
 
