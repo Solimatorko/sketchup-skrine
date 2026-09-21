@@ -14,7 +14,7 @@ module Skrine
           cells: [{ content: :shelves, shelves_count: 4 }, { content: :drawers, height_mode: :mm, height: 600, drawers_count: 3 }] },
         { key: :hanging_top_shelves, label: 'Vešanie hore, police dole',
           cells: [{ content: :rod, height_mode: :mm, height: 1100 }, { content: :shelves, shelves_count: 3 }] },
-        { key: :drawers_only, label: 'Police + 4 zásuvky',
+        { key: :shelves_drawers_4, label: 'Police + 4 zásuvky',
           cells: [{ content: :shelves, shelves_count: 2 }, { content: :drawers, height_mode: :mm, height: 900, drawers_count: 4 }] },
         { key: :hanging_inner_drawers, label: 'Vešanie + vnorené zásuvky',
           cells: [{ content: :rod }, { content: :inner_drawers, height_mode: :mm, height: 500, drawers_count: 2 }] },

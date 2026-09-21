@@ -40,7 +40,7 @@ Dva callbacky do Ruby:
   `{ scene, info, errors, warnings }`. Volá sa po každej zmene (debounce 150 ms). Nemení
   SketchUp.
 - `apply(params_json)` – ako doteraz: `Builder.rebuild` + `setResult`. Volá sa tlačidlom
-  Použiť alebo automaticky (Auto, debounce 400 ms po poslednej zmene).
+  Použiť alebo automaticky (Auto, debounce 600 ms po poslednej zmene).
 
 Dialóg drží `state` (parametre) v JS; Ruby je bezstavové okrem `@group`.
 
@@ -82,7 +82,7 @@ Model doplní `meta[:column]`/`meta[:cell]` aj boxom polí do `layout.info` (už
 | sokel, nožičky, horná lišta, zaslepenie | base | spodok (nožičky/sokel/podlaha), výška, lišty, odsadenia od steny/stropu |
 | bok, strop, dno, zadná stena | construction | otvorí záložku Konštrukcia v rozšírených + zvýrazní |
 
-Hover v nákreze zvýrazní prvok (oranžový obrys), výber = oranžová výplň 25 %. Výber
+Hover v nákreze zvýrazní prvok (oranžový obrys), výber = oranžová výplň 35 %. Výber
 sa zachová po prekreslení (podľa kind+column+cell).
 
 ### 3.3 Editácia kót
@@ -112,8 +112,8 @@ nepoužíva na geometriu (len UI predvyplní odsadenia).
 
 Zoznam `{ key, label, cells: [...] }` – napr. `hanging_drawers` „Vešanie + 3 zásuvky“,
 `shelves_5` „5 políc“, `double_hanging` „2× krátke vešanie“, `shelves_drawers` „Police +
-zásuvky“, `hanging_top_shelves` „Vešanie hore, police dole“, `hanging_only` „Dlhé
-vešanie“, `drawers_only` „Zásuvky“. Klik na kartu modulu nahradí `columns[i].cells`.
+3 zásuvky“, `shelves_drawers_4` „Police + 4 zásuvky“, `hanging_top_shelves` „Vešanie
+hore, police dole“, `hanging_only` „Dlhé vešanie“. Klik na kartu modulu nahradí `columns[i].cells`.
 Náhľad karty = mini nákres stĺpca (JS vykreslí z definície modulu schematicky).
 
 ## 6. Galéria skríň

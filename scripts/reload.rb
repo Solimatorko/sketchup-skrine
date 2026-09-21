@@ -7,9 +7,10 @@ if defined?(Skrine::SU::Dialog)
   Skrine::SU::Dialog.instance_variable_set(:@instance, nil)
 end
 %w[version core/param_schema core/box core/part core/hardware core/layout core/sizing core/registry
-   data/drawer_systems wardrobe/params wardrobe/corpus wardrobe/columns wardrobe/fronts wardrobe/drawers
-   wardrobe/extras wardrobe/model export/cutlist sketchup/units sketchup/storage sketchup/builder
-   sketchup/selection sketchup/commands sketchup/presets sketchup/cutlist_command ui/dialog].each do |f|
+   core/preset_store data/drawer_systems wardrobe/params data/column_modules wardrobe/corpus
+   wardrobe/columns wardrobe/fronts wardrobe/drawers wardrobe/extras wardrobe/model export/cutlist
+   export/scene ui/preview_service sketchup/units sketchup/storage sketchup/builder sketchup/selection
+   sketchup/commands sketchup/presets sketchup/cutlist_command ui/dialog].each do |f|
   load File.join(root, "#{f}.rb")
 end
 puts "Skrine reloaded (#{Skrine::VERSION})"

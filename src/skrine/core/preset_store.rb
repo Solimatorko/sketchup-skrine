@@ -27,7 +27,7 @@ module Skrine
             raw = JSON.parse(File.read(file, encoding: 'UTF-8'))
             name = raw[NAME_KEY] || humanize(File.basename(file, '.json'))
             { file: file, name: name, params: raw.reject { |k, _| k == NAME_KEY } }
-          rescue JSON::ParserError
+          rescue StandardError
             nil
           end
         end.compact
