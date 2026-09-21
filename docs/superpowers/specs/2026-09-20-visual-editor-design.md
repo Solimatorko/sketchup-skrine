@@ -154,3 +154,64 @@ scripts/ui_server.rb                  # dev server: sprístupní html + preview/
 - `node --check` na JS; vizuálna kontrola cez `scripts/ui_server.rb` v prehliadači
   (screenshoty: default, výber stĺpca, výber poľa, galéria, kóta v editácii).
 - SketchUp: `scripts/reload.rb` + ručné overenie (klik → panel → zmena → nákres → Auto → model).
+
+## 10. Overenie
+
+Task 8 (QA finished editora) overil hotovú stránku v prehliadači cez `scripts/ui_server.rb`
+(port 8792, stub `window.sketchup` nad HTTP, žiadny SketchUp). Postup a nálezy sú
+v `.superpowers/sdd/2026-09-20-visual-editor/task-8-report.md`; zhrnutie:
+
+**Overené v prehliadači:**
+- Default stránka (nákres, panel, info riadok) sa vykreslí bez JS chýb.
+- Klik na stĺpec v nákrese → panel stĺpca (šírka, knižnica modulov); klik na kartu modulu
+  okamžite prepíše `columns[i].cells` a nákres sa prekreslí.
+- Klik na pole (shelf/drawer_front/drawer_box/rod) → panel poľa (výška, obsah); klik na
+  kartu obsahu prepíše pole a nákres sa prekreslí.
+- Editácia kóty: platná hodnota sa uloží (`setPath` → mm mód, prekreslenie, warningy z
+  preview); neplatná hodnota (napr. šírka stĺpca < 50 mm → `layout.error`) sa vráti na
+  pôvodnú a kóta na 2 s zčervenie (`.dim.error`).
+- Osadenie „voľne stojaca“ vynuluje `gap_left/right` a `filler_left/right`.
+- Vypnutie dverí (`doors_enabled = false`) vykreslí otvorený korpus bez čiel.
+- Prepínač „Zobrazenie dverí → otvorené“ nemení nákres (len 3D model v SketchUpe) –
+  pridaný hint text pod kartami to teraz vysvetľuje.
+- Auto vypnuté: zmena parametra vyvolá len `preview` (náhľad/warningy), nie `apply`;
+  tlačidlo „Použiť v SketchUpe“ vyvolá `apply` presne raz.
+- Galéria skríň: otvorenie zobrazí karty s live SVG náhľadom; „Použiť na túto skriňu“
+  prepíše aktuálny stav (rozmery, typ dverí, scéna), „Vytvoriť novú“ načíta iný preset
+  do toho istého okna (v reálnom SketchUpe ide cez `Commands.new_from_preset_file`).
+- Menu **Presety ▾** sa otvára/zatvára; položky (uložiť do galérie/súboru, načítať zo
+  súboru) volajú príslušné stubované callbacky.
+- Rozšírené záložky (Konštrukcia, Čelá a špáry, Zásuvky, Materiály, Kovanie a hrany) sa
+  prepínajú správne; enumy s definovaným piktogramom (`ICONS`) sú karty, ostatné (napr.
+  hranovanie) ostávajú `<select>` – podľa návrhu v `form.js`.
+- Zmena veľkosti okna prehliadača prepočíta mierku nákresu (`Drawing.render` používa
+  `host.clientWidth/Height`) a kóty ostanú čitateľné.
+- Konzola aj sieťové požiadavky (`/state`, `/preview`, `/gallery`, `/preset`) bez chýb
+  počas celej relácie.
+
+**Nájdené a opravené chyby (`fix(ui): …`):**
+- Chýbajúci hint text pri karte „Zobrazenie dverí → otvorené“ (nič nenaznačovalo, že
+  otvorenie sa neprejaví v nákrese) – doplnený text a CSS trieda `.hint` v paneli.
+- Menu **Presety ▾** sa po kliknutí mimo seba nezatváralo (chýbal listener na klik mimo
+  `.menu`) – doplnený `document` click-outside handler.
+- `scripts/ui_server.rb` padal s `Encoding::CompatibilityError`, keď shell nemal
+  nastavené `LANG`/`LC_ALL` (UTF-8 znaky v `index.html` pri `File.read` + `.sub` so
+  slovenskými reťazcami) – opravené vynútením `Encoding.default_external/internal =
+  Encoding::UTF_8` a explicitným `encoding: 'UTF-8'` pri čítaní `index.html`.
+
+**Kozmetické/menšie pozorovania (neopravované, nekritické):**
+- Rozbalenie „Rozšírené nastavenia“ zmenší dostupnú výšku nákresu (grid riadok
+  `drawing` je `1fr`, `advanced` je `auto`) – funguje správne, len menej miesta na
+  nákres pri nízkom okne.
+- V automatizovanom prehliadači `Enter` v kóte niekedy nevyvolá commit okamžite (blur
+  vždy commitne) – pravdepodobne kvôli poradiu udalostí v headless klikaní, nie chyba
+  aplikácie (rovnaké pozorovanie ako v Task 7 reporte).
+
+**Zostáva overiť v SketchUpe (Step 2, mimo rozsah Task 8 – vykonáva kontrolór cez
+`scripts/reload.rb` a `scripts/verify.rb`, bez zásahu do `verify.rb`):**
+- Reálny handshake `window.sketchup` (WebDialog/HtmlDialog) namiesto HTTP stub-u.
+- Zmena šírky kótou → Auto → prekreslenie 3D modelu (`Builder.rebuild`).
+- Modul „5 políc“ priradený stĺpcu 2 → korektná geometria v modeli.
+- Galéria → „Vytvoriť novú“ → `Commands.new_from_preset_file` vloží druhú skriňu vedľa.
+- Screenshot cez `view.write_image` (súčasť `scripts/verify.rb`) pre vizuálnu kontrolu
+  v reálnom modeli.
