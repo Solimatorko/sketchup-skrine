@@ -52,7 +52,7 @@ module Skrine
                                resizable: true, style: UI::HtmlDialog::STYLE_DIALOG)
         d.set_file(HTML)
         d.add_action_callback('ready') { push_state }
-        d.add_action_callback('log') { |_, msg| puts "[Skrine] #{msg}" }
+        d.add_action_callback('log') { |_, msg| puts "[Skrine] #{msg}"; Diag.log("js: #{msg}") }
         d.add_action_callback('preview') do |_, json, seq|
           send_js('Skrine.setPreview', Editor::PreviewService.preview(@type, JSON.parse(json)).merge(seq: seq.to_i))
         rescue StandardError => e

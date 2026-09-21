@@ -45,6 +45,7 @@ const Skrine = {
     clearTimeout(this.previewTimer);
     clearTimeout(this.applyTimer);
     this.seq = 0; this.lastPreviewSeq = 0; this.lastApplySeq = 0;
+    if (window.sketchup && sketchup.log) sketchup.log('init ok: boxes=' + ((payload.preview && payload.preview.scene) ? payload.preview.scene.boxes.length : 0) + ' groups=' + this.schema.groups.length);
     Form.LABELS = OPTION_LABELS;
     document.getElementById('title').textContent = payload.label;
     this.render();

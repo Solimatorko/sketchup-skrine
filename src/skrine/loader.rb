@@ -1,4 +1,7 @@
 require 'json'
+require_relative 'sketchup/diag'
+Skrine::SU::Diag.log("loader start (#{__FILE__})")
+begin
 require_relative 'core'
 require_relative 'sketchup/units'
 require_relative 'sketchup/storage'
@@ -30,5 +33,11 @@ module Skrine
       end
     end
     file_loaded(__FILE__)
+    SU::Diag.log('loader done: menu registered')
+    SU::Diag.schedule_selftest
   end
+end
+rescue StandardError, ScriptError => e
+  Skrine::SU::Diag.log_exception('loader', e)
+  raise
 end
