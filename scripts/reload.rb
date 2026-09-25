@@ -13,4 +13,9 @@ end
    sketchup/commands sketchup/presets sketchup/cutlist_command ui/dialog].each do |f|
   load File.join(root, "#{f}.rb")
 end
-puts "Skrine reloaded (#{Skrine::VERSION})"
+# The menu/context-menu block lives in loader.rb behind a file_loaded? guard, so
+# loading it again registers the menu when the first (start-up) load crashed and
+# is a no-op when it succeeded.
+load File.expand_path('../src/skrine/loader.rb', __dir__)
+menu_ok = Skrine::SU::Diag.menu_registered?
+puts "Skrine reloaded (#{Skrine::VERSION}); menu #{menu_ok ? 'registered' : 'NOT registered - see /tmp/skrine-load.log'}"

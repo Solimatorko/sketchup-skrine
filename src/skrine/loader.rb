@@ -33,6 +33,7 @@ module Skrine
       end
     end
     file_loaded(__FILE__)
+    SU::Diag.menu_registered!
     SU::Diag.log('loader done: menu registered')
     SU::Diag.schedule_selftest
   end

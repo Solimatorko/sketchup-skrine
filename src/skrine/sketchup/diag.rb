@@ -19,6 +19,14 @@ module Skrine
         log("#{where}: #{error.class}: #{error.message}\n  #{error.backtrace.first(6).join("\n  ")}")
       end
 
+      def self.menu_registered!
+        @menu_registered = true
+      end
+
+      def self.menu_registered?
+        @menu_registered == true
+      end
+
       def self.selftest_requested?
         File.exist?(REQUEST)
       end
