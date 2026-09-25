@@ -28,6 +28,10 @@ The editor is in Slovak; the code, the API and this documentation are in English
 - **Drawers** — front only, wooden box, or Blum LEGRABOX / TANDEMBOX / MERIVOBOX
   with editable catalogue tables; the runner's nominal length and the height
   class are picked automatically and reported when they do not fit.
+- **3D view with a tape measure** — the same model in WebGL (three.js, bundled
+  offline): orbit, section cut, doors drawn open, click to select, and a measure
+  tool that snaps to part corners and can write a measured distance back into
+  the matching parameter.
 - **Cut list** — parts grouped by material, identical parts merged, edge banding
   in metres, hardware summary, area per material; exports to CSV, to a
   [CutList Optimizer](https://www.cutlistoptimizer.com/) CSV and to a printable

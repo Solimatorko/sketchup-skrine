@@ -21,8 +21,8 @@ of them.
 
 ## The drawing
 
-Four views: **s čelami** (with fronts), **bez čiel** (fronts hidden), **bok**
-(side) and **pôdorys** (plan).
+Five views: **s čelami** (with fronts), **bez čiel** (fronts hidden), **bok**
+(side), **pôdorys** (plan) and **3D**.
 
 - **Click** a part to select it and open its panel: a door or a partition selects
   the column, a shelf, rail or drawer selects the cell, the plinth, legs or cover
@@ -33,6 +33,22 @@ Four views: **s čelami** (with fronts), **bez čiel** (fronts hidden), **bok**
   remaining space. If the value does not fit, it is reverted, flashed red and the
   reason is shown below.
 - Hovering highlights the part under the cursor.
+
+## 3D view and measuring
+
+The **3D** card shows the same wardrobe in WebGL: drag to orbit, right-drag (or
+Shift-drag) to pan, wheel to zoom, and the buttons for axonometric, front, side
+and top. **otvorené dvere** draws the doors open, **bez čiel** hides fronts and
+strips, and **rez** cuts the model from the front so you can look inside.
+Clicking a part selects it exactly like in the 2D drawing.
+
+**Meranie** (measure) turns on the tape measure. The cursor snaps to part
+corners (green), edge midpoints (blue) and face centres (grey); click two points
+and the distance appears below the view together with its ΔX / ΔY / ΔZ
+components. Measurements stay in the list until you remove them. When a
+measurement matches a parameter — the full outer width, height or depth, the
+inner width of one column or the height of one cell — the list offers a
+**použiť ako …** button that writes the measured value into that parameter.
 
 ## Panels
 

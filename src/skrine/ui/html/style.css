@@ -89,3 +89,16 @@ details summary { cursor: pointer; color: #666; font-size: 12px; text-transform:
 .gcard h4 { margin: 0 0 6px; font-size: 13px; }
 .gcard .thumb { width: 100%; height: 190px; background: #fafafa; }
 .gcard .btnrow { justify-content: space-between; }
+
+#view3d { grid-area: drawing; display: flex; flex-direction: column; background: #f7f7f7; overflow: hidden; }
+#view3d-bar { display: flex; align-items: center; gap: 8px; padding: 4px 10px; background: #fafafa; border-bottom: 1px solid #e5e5e5; flex-wrap: wrap; }
+#view3d-bar label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+#view3d-bar button.active { border-color: #f28c28; background: #fff7ef; }
+#view3d-canvas { flex: 1; min-height: 200px; position: relative; }
+#view3d-canvas canvas { display: block; width: 100%; height: 100%; }
+#measure-list { max-height: 120px; overflow: auto; padding: 4px 10px; background: #fff; border-top: 1px solid #e5e5e5; }
+#measure-list:empty { display: none; }
+#measure-list .m { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 12px; }
+#measure-list .m b { font-size: 13px; }
+#measure-list .m .delta { color: #666; }
+#measure-list .m button { padding: 1px 8px; }

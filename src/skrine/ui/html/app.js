@@ -1,5 +1,5 @@
 /* Skrine visual editor: state, selection panels, drawing wiring, advanced form, SketchUp bridge. */
-/* global Drawing Cards ICONS Form Gallery sketchup */
+/* global Drawing Cards ICONS Form Gallery Viewer3d Measure sketchup */
 const OPTION_LABELS = {
   between_walls: 'medzi stenami', corner_left: 'ľavý roh', corner_right: 'pravý roh', free: 'voľne stojaca',
   inset: 'medzi bokmi / vnorené', overlay: 'cez bok / nalozené', half_overlay: 'polonalozené',
@@ -13,7 +13,7 @@ const OPTION_LABELS = {
   front_only: 'len čelo + výsuv', wood_box: 'drevený box', blum_legrabox: 'Blum LEGRABOX', blum_tandembox: 'Blum TANDEMBOX', blum_merivobox: 'Blum MERIVOBOX',
   dowels: 'kolíky', confirmat: 'konfirmáty', cam_lock: 'excentre', front: 'predná hrana', all: 'všetky hrany', wood: 'drevený', metal: 'kovový'
 };
-const VIEWS = [{ value: 'front', label: 's čelami' }, { value: 'front_open', label: 'bez čiel' }, { value: 'side', label: 'bok' }, { value: 'plan', label: 'pôdorys' }];
+const VIEWS = [{ value: 'front', label: 's čelami' }, { value: 'front_open', label: 'bez čiel' }, { value: 'side', label: 'bok' }, { value: 'plan', label: 'pôdorys' }, { value: '3d', label: '3D' }];
 const ADVANCED_GROUPS = [['construction', 'Konštrukcia'], ['fronts', 'Čelá a špáry'], ['drawers', 'Zásuvky'], ['materials', 'Materiály'], ['hardware', 'Kovanie a hrany']];
 
 const el = (tag, attrs = {}, ...children) => {
@@ -120,13 +120,19 @@ const Skrine = {
       num.onchange = () => { const v = parseFloat(num.value); if (!Number.isNaN(v)) { this.state[k] = v; rng.value = v; this.changed(); } };
       rng.oninput = () => { this.state[k] = parseFloat(rng.value); num.value = rng.value; this.changed(); };
     });
-    Cards.radio(document.getElementById('view-cards'), { options: VIEWS, value: this.view, icons: 'view', small: true,
+    const views = VIEWS.filter((v) => v.value !== '3d' || Viewer3d.available());
+    Cards.radio(document.getElementById('view-cards'), { options: views, value: this.view, icons: 'view', small: true,
       onChange: (v) => { this.view = v; this.drawScene(); } });
   },
 
   drawScene() {
     const host = document.getElementById('drawing');
+    const host3d = document.getElementById('view3d');
     if (!this.scene) return;
+    const use3d = this.view === '3d' && Viewer3d.available();
+    host.classList.toggle('hidden', use3d);
+    host3d.classList.toggle('hidden', !use3d);
+    if (use3d) { this.draw3d(); return; }
     // Rebuilding the SVG (host.innerHTML) would remove a mid-edit .dim-input, which
     // fires blur -> commit() with a possibly half-typed value (M14). Defer the redraw
     // until editDim's commit/Escape handler clears the flag.
@@ -139,8 +145,53 @@ const Skrine = {
     });
   },
 
+  draw3d() {
+    const canvasHost = document.getElementById('view3d-canvas');
+    if (!Viewer3d.mount(canvasHost)) return;
+    if (!this.viewer3dBound) {
+      Viewer3d.onClick = (event, hit) => {
+        if (Measure.onClick(event, hit)) return;
+        if (hit) this.select(Drawing.targetFor(hit.entry.box));
+      };
+      Viewer3d.onPointerMove = (event) => Measure.onMove(event, Measure.active ? Viewer3d.pick(event) : null);
+      Measure.onChange = () => this.renderMeasures();
+      this.viewer3dBound = true;
+    }
+    Viewer3d.build(this.scene, {
+      selection: this.selection,
+      withoutFronts: document.getElementById('chk-3d-nofronts').checked,
+      openDoors: document.getElementById('chk-3d-open').checked,
+      keepCamera: true
+    });
+    Measure.invalidate();
+    Measure.draw();
+    Viewer3d.setClip(Number(document.getElementById('rng-3d-clip').value) / 100, this.scene);
+  },
+
+  renderMeasures() {
+    const list = document.getElementById('measure-list');
+    list.innerHTML = '';
+    document.getElementById('btn-measure').classList.toggle('active', Measure.active);
+    document.getElementById('measure-hint').classList.toggle('hidden', !Measure.active);
+    Measure.list.forEach((m, i) => {
+      const row = el('div', { class: 'm' });
+      row.append(el('b', {}, Measure.fmt(Measure.distance(m)) + ' mm'));
+      row.append(el('span', { class: 'delta' }, `ΔX ${Measure.fmt(Math.abs(m.b.x - m.a.x))} · ΔY ${Measure.fmt(Math.abs(m.b.y - m.a.y))} · ΔZ ${Measure.fmt(Math.abs(m.b.z - m.a.z))}`));
+      const s = Measure.suggestion(m, this.state, this.scene);
+      if (s) {
+        row.append(el('button', { type: 'button', onclick: () => { this.setPath(s.path, Math.round(s.value * 10) / 10); } }, `použiť ako ${s.label}`));
+      }
+      row.append(el('button', { type: 'button', onclick: () => { Measure.list.splice(i, 1); Measure.draw(); this.renderMeasures(); } }, '✕'));
+      list.append(row);
+    });
+    if (Measure.list.length) {
+      list.append(el('button', { type: 'button', onclick: () => Measure.clearAll() }, 'Vymazať merania'));
+    }
+  },
+
   select(t) {
     this.selection = t;
+    if (this.view === '3d') Viewer3d.applySelection(t);
     if (t.kind === 'construction') this.openAdvanced('construction');
     this.drawScene(); this.renderPanel();
   },
@@ -459,6 +510,12 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   $('adv-toggle').onclick = () => { const b = $('adv-body'); b.classList.toggle('hidden'); $('adv-toggle').textContent = (b.classList.contains('hidden') ? '▸' : '▾') + ' Rozšírené nastavenia'; if (!b.classList.contains('hidden')) Skrine.renderAdvanced(); };
   window.addEventListener('resize', () => Skrine.drawScene());
+  document.querySelectorAll('#view3d-bar [data-cam]').forEach((b) => { b.onclick = () => Viewer3d.setView(b.dataset.cam); });
+  $('chk-3d-open').onchange = () => Skrine.draw3d();
+  $('chk-3d-nofronts').onchange = () => Skrine.draw3d();
+  $('rng-3d-clip').oninput = (e) => Viewer3d.setClip(Number(e.target.value) / 100, Skrine.scene);
+  $('btn-measure').onclick = () => { if (Measure.active) Measure.stop(); else Measure.start(() => Skrine.renderMeasures()); };
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && Measure.active) Measure.cancel(); });
   $('info').textContent = 'Čakám na dáta zo SketchUpu…';
   Skrine.requestState(0);
 });

@@ -35,6 +35,21 @@
       <span class="hint">Klikni na stĺpec, pole, dvere alebo sokel v nákreze. Modré kóty sa dajú prepísať.</span>
     </div>
     <div id="drawing"></div>
+    <div id="view3d" class="hidden">
+      <div id="view3d-bar">
+        <button type="button" data-cam="iso">axonometria</button>
+        <button type="button" data-cam="front">predok</button>
+        <button type="button" data-cam="side">bok</button>
+        <button type="button" data-cam="top">zhora</button>
+        <label><input type="checkbox" id="chk-3d-open"> otvorené dvere</label>
+        <label><input type="checkbox" id="chk-3d-nofronts"> bez čiel</label>
+        <label>rez <input type="range" id="rng-3d-clip" min="0" max="100" value="0"></label>
+        <button type="button" id="btn-measure">Meranie</button>
+        <span id="measure-hint" class="hint hidden">Klikni dva body (rohy sa prichytávajú). Esc zruší.</span>
+      </div>
+      <div id="view3d-canvas"></div>
+      <div id="measure-list"></div>
+    </div>
     <section id="advanced">
       <button id="adv-toggle" type="button">▸ Rozšírené nastavenia (konštrukcia, čelá, zásuvky, materiály, kovanie)</button>
       <div id="adv-body" class="hidden">
@@ -62,6 +77,9 @@
   <script src="icons.js"></script>
   <script src="cards.js"></script>
   <script src="drawing.js"></script>
+  <script src="libs/three.min.js"></script>
+  <script src="viewer3d.js"></script>
+  <script src="measure.js"></script>
   <script src="form.js"></script>
   <script src="gallery.js"></script>
   <script src="app.js"></script>

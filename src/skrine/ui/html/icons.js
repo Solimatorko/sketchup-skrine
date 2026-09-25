@@ -69,6 +69,7 @@ const ICONS = (() => {
     'view.front': svg(cab() + `<rect x="12" y="10" width="11" height="28" fill="${A}" fill-opacity=".35"/><rect x="25" y="10" width="11" height="28" fill="${A}" fill-opacity=".35"/>`),
     'view.front_open': svg(cab() + shelves()),
     'view.side': svg(`<rect x="16" y="8" width="16" height="32" fill="#fff"/><rect x="14" y="8" width="2" height="32" fill="${A}" stroke="none"/>`),
+    'view.3d': svg(`<path d="M24 6 L40 14 L40 34 L24 42 L8 34 L8 14 Z" fill="#fff"/><path d="M24 6 L24 42 M8 14 L24 22 L40 14 M24 22 L24 42" stroke="${S}"/><path d="M24 6 L40 14 L24 22 Z" fill="${A}" fill-opacity=".35"/>`),
     'view.plan': svg(`<rect x="8" y="14" width="32" height="20" fill="#fff"/><rect x="8" y="12" width="32" height="2" fill="${A}" stroke="none"/>`)
   };
 })();

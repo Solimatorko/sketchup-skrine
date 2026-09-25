@@ -28,6 +28,9 @@ src/skrine/ui/
   preview_service.rb          pure: preview / init payload / gallery
   dialog.rb                   HtmlDialog and its callbacks
   html/                       the editor page (vanilla JS, no build step)
+    drawing.js                  2D projections, selection, editable dimensions
+    viewer3d.js measure.js      3D view (three.js) and the tape measure
+    libs/three.min.js           vendored three.js r149 (MIT), so the dialog works offline
 ```
 
 Everything in `core`, `data`, `wardrobe`, `export` and `ui/preview_service.rb`

@@ -76,8 +76,10 @@ def handle(sock)
     path = Skrine::Core::PresetStore.save_named(JSON.parse(body), name)
     json(sock, { path: path })
   else
-    path = File.join(HTML_DIR, File.basename(uri.path))
-    if File.file?(path)
+    # Serve files from the html folder, including the vendored libs/ subfolder.
+    # expand_path + the start_with? check keeps '..' out of the served tree.
+    path = File.expand_path(File.join(HTML_DIR, uri.path.sub(%r{\A/}, '')))
+    if path.start_with?("#{HTML_DIR}#{File::SEPARATOR}") && File.file?(path)
       respond(sock, 200, TYPES[File.extname(path)] || 'application/octet-stream', File.binread(path))
     else
       respond(sock, 404, 'text/plain', 'not found')
