@@ -1,34 +1,106 @@
-# Skrine – parametrické skrine pre SketchUp
+# Skrine — parametric wardrobes for SketchUp
 
-Ruby extension pre SketchUp 2026. Skriňa sa generuje z parametrov (rozmery,
-konštrukcia, stĺpce/polia, dvere, zásuvky, úchytky, materiály) a po každej zmene
-sa pregeneruje. Z modelu sa exportuje nárezový plán a kusovník kovania.
+A SketchUp 2026 extension that builds built-in and free-standing wardrobes from
+parameters and turns them into a cut list. Instead of drawing panels by hand you
+set width, height, depth, columns, shelves, drawers, doors and hardware in a
+visual editor; the model is rebuilt after every change, and every part carries
+its dimensions, material and edge banding as attributes, so the cut list comes
+straight out of the model.
 
-## Použitie
-1. Extensions › Skrine › **Nová skriňa** – vloží skriňu na počiatok a otvorí vizuálny editor.
-2. **Nákres** hore zobrazuje skriňu spredu (aj bez čiel, zboku, pôdorys – prepínač nad nákresom). Klikni na stĺpec, pole, dvere alebo sokel priamo v nákrese – vpravo sa otvorí príslušný panel. Modré kóty (šírka, výška, hĺbka, šírky stĺpcov, výšky polí) sa dajú prepísať kliknutím – neplatná hodnota sa na chvíľu zvýrazní červeno a vráti pôvodnú hodnotu.
-3. **Panely vpravo** podľa výberu:
-   - nič vybrané → globálne parametre skrine (osadenie, dvere, úchytka, zoznam stĺpcov, spodok/vrch);
-   - stĺpec → šírka (auto/mm/pomer) a **knižnica modulov** – karty s piktogramom (veniec, police, zásuvky, kombinácie…), klik okamžite prepíše obsah stĺpca;
-   - pole → výška (auto/mm/pomer) a karty obsahu poľa (police, tyč, zásuvky, vnorené zásuvky, prázdne) + parametre zásuviek;
-   - sokel/konštrukcia → skratka do príslušnej záložky Rozšírených nastavení.
-4. **Galéria skríň** (tlačidlo v hlavičke) ukazuje uložené presety s živým náhľadom; „Použiť na túto skriňu“ prepíše aktuálnu skriňu, „Vytvoriť novú“ vloží ďalšiu. **Presety ▾** ponúka uloženie do galérie/súboru a načítanie zo súboru.
-5. **Rozšírené nastavenia** (skladacia sekcia pod nákresom) – záložky Konštrukcia, Čelá a špáry, Zásuvky, Materiály, Kovanie a hrany; časté enumy majú piktogramové karty, ostatné bežný výber.
-6. **Auto** (pri tlačidle Použiť) po každej zmene rovno prekreslí model v SketchUpe; keď je vypnuté, zmeny sa len prepočítajú v náhľade a do modelu sa prenesú až tlačidlom **Použiť v SketchUpe**.
-7. Skriňu presuň štandardným nástrojom Move; pravý klik na skriňu → **Upraviť skriňu**.
-8. **Nárezový plán** – tabuľky podľa materiálu, hranovanie, kovanie; export CSV / CutList Optimizer / HTML.
-9. Presety: `presets/*.json` – čiastočné JSON parametre, načítajú sa cez galériu alebo Načítať zo súboru.
+The editor is in Slovak; the code, the API and this documentation are in English.
 
-Poznámka: prepínač „Zobrazenie dverí → otvorené“ ovplyvňuje len 3D model (dvere sa v ňom vykreslia pootočené); nákres v editore ostáva vždy zatvorený, o čom informuje text pod prepínačom.
+![Editor](docs/images/editor.png)
 
-Rozmery dielcov sú uložené v atribútoch (`Skrine::Part`) každej groupy; nárezový plán číta atribúty, nie geometriu.
-Tabuľky zásuvkových systémov (Blum LEGRABOX / TANDEMBOX / MERIVOBOX) sú predvolené hodnoty – over ich v aktuálnom katalógu a uprav v záložke Zásuvky.
+## What it does
 
-## Vývoj
-- `scripts/install_dev.sh` – symlink do SketchUp Plugins
-- Testy: `/opt/homebrew/opt/ruby/bin/ruby -Isrc -Itest test/run_all.rb`
-- `scripts/ui_server.rb` – samostatný dev server pre stránku editora bez SketchUpu, so stubom `window.sketchup` nad HTTP: `/opt/homebrew/opt/ruby/bin/ruby scripts/ui_server.rb` → http://localhost:8792/. Funguje aj v shelli bez UTF-8 locale (LANG/LC_ALL) – vynucuje `Encoding::UTF_8`.
-- `scripts/reload.rb` – znovu načíta zdrojáky pluginu do bežiaceho SketchUpu (Ruby Console): `load '/Users/milos/Git/sketchup-skrine/scripts/reload.rb'`.
-- `scripts/verify.rb` – v SketchUpe vytvorí všetky presety vedľa seba, otvorí editor nad prvým a uloží screenshot/log (`load '/Users/milos/Git/sketchup-skrine/scripts/verify.rb'`).
-- `scripts/preview.rb` – rýchly CLI náhľad rozloženia (bez SketchUpu aj bez prehliadača): `/opt/homebrew/opt/ruby/bin/ruby -Isrc scripts/preview.rb [preset.json] [out.html]` vykreslí SVG pohľady (spredu/zboku/pôdorys) do HTML súboru – hodí sa na rýchlu kontrolu rozmerov/rozloženia priamo z konzoly.
-- Spec: `docs/superpowers/specs/2026-09-19-skrine-plugin-design.md`, `docs/superpowers/specs/2026-09-20-visual-editor-design.md`
+- **Parametric wardrobe** — outer size, wall/ceiling gaps, legs or plinth, cover
+  and filler strips, per-panel carcass settings (thickness, corner joints,
+  recesses), three back-panel modes.
+- **Columns and cells** — any number of columns (fixed mm, ratio or auto width),
+  each split into cells holding adjustable shelves, a hanging rail, drawers,
+  inner drawers behind doors, or nothing. One click applies a ready-made column
+  module ("hanging rail + 3 drawers", "5 shelves", …).
+- **Doors** — none, single leaf (left/right), double, or a lift-up flap; overlay,
+  half overlay or inset; reveals and gaps per side; hinge count from a table;
+  doors can be drawn open.
+- **Handles** — none (push-to-open), drilled (hole spacing and position) or an
+  integrated profile that shortens the front.
+- **Drawers** — front only, wooden box, or Blum LEGRABOX / TANDEMBOX / MERIVOBOX
+  with editable catalogue tables; the runner's nominal length and the height
+  class are picked automatically and reported when they do not fit.
+- **Cut list** — parts grouped by material, identical parts merged, edge banding
+  in metres, hardware summary, area per material; exports to CSV, to a
+  [CutList Optimizer](https://www.cutlistoptimizer.com/) CSV and to a printable
+  HTML page.
+- **Presets and gallery** — save a wardrobe as a preset and pick it later from a
+  gallery of thumbnails, or start a new wardrobe from one.
+
+## Requirements
+
+- SketchUp 2026 (SketchUp 2017+ should work; only 2026 is tested) on macOS or
+  Windows.
+- Nothing else for using the extension. For development: Ruby 3.2+ (the test
+  suite runs outside SketchUp) and Node (only for `node --check`).
+
+## Install
+
+```bash
+git clone https://github.com/Solimatorko/sketchup-skrine.git
+cd sketchup-skrine
+scripts/install_dev.sh          # symlinks src/ into SketchUp's Plugins folder
+```
+
+Restart SketchUp. See [docs/installation.md](docs/installation.md) for the
+Windows path, packaging and troubleshooting.
+
+## Quick start
+
+1. **Extensions › Skrine › Nová skriňa** (New wardrobe) — a wardrobe appears at
+   the origin and the editor opens.
+2. Set width, height and depth at the top; click a door, a shelf, a drawer or the
+   plinth in the drawing to open its panel on the right.
+3. Pick a column module, change the cell contents, or retype a blue dimension in
+   the drawing.
+4. With **Auto** on, the SketchUp model is rebuilt after every change; otherwise
+   press **Použiť v SketchUpe** (Apply).
+5. **Nárezový plán** (Cut list) opens the parts list with CSV/HTML export.
+
+The full walkthrough is in [docs/user-guide.md](docs/user-guide.md).
+
+## Try the editor without SketchUp
+
+The editor is plain HTML/JS talking to a small Ruby service, so it runs in an
+ordinary browser with the model computed by the same code the extension uses:
+
+```bash
+scripts/ui            # starts a local server and opens http://localhost:8792/
+scripts/ui stop
+```
+
+Everything works except the three things that need SketchUp: rebuilding the
+model, the file dialogs and the cut-list window.
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [Installation](docs/installation.md) | Install, update, uninstall, troubleshooting |
+| [User guide](docs/user-guide.md) | The editor screen by screen, presets, gallery |
+| [Parameter reference](docs/parameters.md) | Every parameter, default, range and meaning (generated from the schema) |
+| [Cut list](docs/cut-list.md) | How parts are grouped, the CSV formats, CutList Optimizer import |
+| [Architecture](docs/architecture.md) | Layers, scene JSON, dialog bridge, attributes in the model |
+| [Development](docs/development.md) | Tests, dev server, scripts, adding a new object type |
+
+Design documents under `docs/superpowers/` are written in Slovak and record how
+the plugin and its editor were designed.
+
+## Status
+
+The model layer, the cut list and the editor are covered by 128 tests and a
+browser QA pass. Drawer system tables (LEGRABOX, TANDEMBOX, MERIVOBOX) ship with
+typical catalogue values — check them against the current Blum catalogue before
+ordering. A toolbar with icons and a 3D preview are not implemented yet.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
