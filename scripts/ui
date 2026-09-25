@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Opens the Skrine editor in a normal browser, without SketchUp.
+#   scripts/ui           – start the dev server (if needed) and open the editor
+#   scripts/ui stop      – stop the dev server
+#   scripts/ui icons     – open the pictogram catalogue
+#   scripts/ui drawing   – open the drawing test page
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+RUBY="${SKRINE_RUBY:-/opt/homebrew/opt/ruby/bin/ruby}"
+PORT="${SKRINE_PORT:-8792}"
+LOG="/tmp/skrine-ui-server.log"
+URL="http://localhost:${PORT}/"
+
+case "${1:-open}" in
+  stop)
+    pkill -f "ui_server.rb" && echo "Server zastavený." || echo "Server nebežal."
+    exit 0
+    ;;
+  icons)   URL="${URL}icons.html" ;;
+  drawing) URL="${URL}drawing.html" ;;
+esac
+
+if ! curl -s -o /dev/null "http://localhost:${PORT}/" 2>/dev/null; then
+  echo "Spúšťam server na porte ${PORT} (log: ${LOG})…"
+  (cd "$ROOT" && nohup "$RUBY" scripts/ui_server.rb "$PORT" >"$LOG" 2>&1 &)
+  for _ in $(seq 1 20); do
+    sleep 0.25
+    curl -s -o /dev/null "http://localhost:${PORT}/" && break
+  done
+fi
+
+if ! curl -s -o /dev/null "http://localhost:${PORT}/"; then
+  echo "Server sa nepodarilo spustiť, pozri ${LOG}:" >&2
+  tail -20 "$LOG" >&2
+  exit 1
+fi
+
+echo "Editor: ${URL}"
+echo "Zastavenie: scripts/ui stop"
+open "$URL" && exit 0
