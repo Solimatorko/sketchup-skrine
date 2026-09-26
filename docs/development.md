@@ -30,6 +30,9 @@ node --check src/skrine/ui/html/app.js
 # regenerate docs/parameters.md from the schema
 /opt/homebrew/opt/ruby/bin/ruby -Isrc scripts/gen_docs.rb
 
+# build the browser demo (Ruby in WebAssembly) into demo/ and serve it
+ruby scripts/build_demo.rb && (cd demo && python3 -m http.server 8793)
+
 # static SVG previews of a preset (front, side, plan) as one HTML file
 /opt/homebrew/opt/ruby/bin/ruby -Isrc scripts/preview.rb presets/satnik-2-stlpce.json /tmp/preview.html
 ```
